@@ -1,0 +1,8 @@
+.tools/
+*.log
+*.tmp
+dist/*.exe
+dist/*.sha256
+!dist/README.md
+.vs/
+.vscode/

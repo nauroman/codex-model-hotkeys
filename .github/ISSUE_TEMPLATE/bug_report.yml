@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a shortcut, picker, installation, or compatibility problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please remove private task content and sensitive paths from logs.
+  - type: input
+    id: app-version
+    attributes:
+      label: Codex app version
+      placeholder: OpenAI.Codex_...
+    validations:
+      required: true
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version
+    validations:
+      required: true
+  - type: input
+    id: language
+    attributes:
+      label: Codex display language
+    validations:
+      required: true
+  - type: dropdown
+    id: picker-mode
+    attributes:
+      label: Initial picker mode
+      options:
+        - Compact/simple slider
+        - Advanced Model/Effort rows
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include the shortcut, expected preset, and actual result.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant sanitized log lines
+      render: text

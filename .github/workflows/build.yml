@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runtime and installer
+        shell: powershell
+        run: .\scripts\Build.ps1 -Clean
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexModelHotkeys-Windows
+          path: |
+            dist/CodexModelHotkeys.exe
+            dist/CodexModelHotkeys-Setup.exe
+            dist/CodexModelHotkeys-Setup.exe.sha256
