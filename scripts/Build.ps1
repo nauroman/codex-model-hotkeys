@@ -114,6 +114,13 @@ if ($setupValidation.ExitCode -ne 0) {
     throw 'The compiled installer failed validation.'
 }
 
+$uninstallerValidation = Start-Process -FilePath 'powershell.exe' `
+    -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "installer\Uninstall.ps1" -Validate' `
+    -WorkingDirectory $repositoryRoot -PassThru -Wait -WindowStyle Hidden
+if ($uninstallerValidation.ExitCode -ne 0) {
+    throw 'The uninstaller path checks failed validation.'
+}
+
 $hash = (Get-FileHash -LiteralPath $setupOutput -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -LiteralPath ($setupOutput + '.sha256') `
     -Value "$hash  CodexModelHotkeys-Setup.exe" -Encoding ascii

@@ -10,7 +10,14 @@ if InStr(RawCommandLine, " /iLib ")
     ExitApp(0)
 
 if InStr(RawCommandLine, " --validate")
+{
+    ultraPattern := GetEffortOptionPattern("Ultra")
+    if !RegExMatch("Ultra Available on selected plans", ultraPattern)
+        ExitApp(1)
+    if RegExMatch("Max", ultraPattern)
+        ExitApp(1)
     ExitApp(0)
+}
 
 UIA.SetMaximumDPIAwareness()
 Persistent true
@@ -23,9 +30,6 @@ global ConfigPath := A_IsCompiled
 global DataDirectory := EnvGet("LOCALAPPDATA") "\CodexModelHotkeys"
 global LogPath := DataDirectory "\CodexModelHotkeys.log"
 global Presets := LoadPresets(ConfigPath)
-global CycleUpHotkey := ReadConfigValue("General", "CycleUp", "^!WheelUp")
-global CycleDownHotkey := ReadConfigValue("General", "CycleDown", "^!WheelDown")
-global PresetIndex := DetectInitialPreset()
 
 DirCreate(DataDirectory)
 OnError(LogUnhandledError)
@@ -77,10 +81,6 @@ CreatePreset(hotkeyName, displayName, modelName, effortName)
     return {
         Hotkey: hotkeyName,
         Name: displayName,
-        Model: modelName,
-        ModelSlug: "gpt-5.6-" StrLower(modelName),
-        Effort: EffortConfigValue(effortName),
-        EffortLabel: effortName,
         TriggerLabel: "5.6 " modelName " " effortName
     }
 }
@@ -110,24 +110,6 @@ NormalizeEffortName(value)
     }
 }
 
-EffortConfigValue(effortName)
-{
-    switch effortName
-    {
-        case "Light": return "low"
-        case "Extra High": return "xhigh"
-        default: return StrLower(effortName)
-    }
-}
-
-ReadConfigValue(section, key, fallback)
-{
-    global ConfigPath
-    if !FileExist(ConfigPath)
-        return fallback
-    return Trim(IniRead(ConfigPath, section, key, fallback))
-}
-
 HasCommandLineArgument(expected)
 {
     for argument in A_Args
@@ -140,7 +122,7 @@ HasCommandLineArgument(expected)
 
 RegisterConfiguredHotkeys()
 {
-    global Presets, CycleUpHotkey, CycleDownHotkey
+    global Presets
 
     HotIf((*) => IsCodexWindow())
     for index, preset in Presets
@@ -149,14 +131,6 @@ RegisterConfiguredHotkeys()
         catch as err
             LogMessage("invalid-hotkey=" preset.Hotkey " error=" err.Message)
     }
-
-    try Hotkey(CycleUpHotkey, SwitchPreset.Bind(1))
-    catch as err
-        LogMessage("invalid-cycle-up=" CycleUpHotkey " error=" err.Message)
-
-    try Hotkey(CycleDownHotkey, SwitchPreset.Bind(-1))
-    catch as err
-        LogMessage("invalid-cycle-down=" CycleDownHotkey " error=" err.Message)
     HotIf()
 }
 
@@ -233,58 +207,9 @@ IsCodexWindow()
     }
 }
 
-DetectInitialPreset()
-{
-    global Presets
-
-    try
-    {
-        userProfile := EnvGet("USERPROFILE")
-        config := FileRead(userProfile "\.codex\config.toml", "UTF-8")
-        model := ""
-        effort := ""
-
-        if RegExMatch(config, "m)^\s*model\s*=\s*`"([^`"]+)`"", &modelMatch)
-            model := modelMatch[1]
-
-        if RegExMatch(config, "m)^\s*model_reasoning_effort\s*=\s*`"([^`"]+)`"", &effortMatch)
-            effort := effortMatch[1]
-
-        for index, preset in Presets
-        {
-            if preset.ModelSlug = model && preset.Effort = effort
-                return index
-        }
-    }
-    catch
-    {
-    }
-
-    return 0
-}
-
-SwitchPreset(direction, *)
-{
-    global Presets, PresetIndex
-
-    nextIndex := PresetIndex
-    if nextIndex = 0
-        nextIndex := direction > 0 ? 1 : Presets.Length
-    else
-    {
-        nextIndex += direction
-        if nextIndex > Presets.Length
-            nextIndex := 1
-        else if nextIndex < 1
-            nextIndex := Presets.Length
-    }
-
-    SelectPreset(nextIndex)
-}
-
 SelectPreset(index, *)
 {
-    global Presets, PresetIndex, LogPath
+    global Presets, LogPath
     static switching := false
 
     if switching || index < 1 || index > Presets.Length
@@ -313,7 +238,6 @@ SelectPreset(index, *)
             return
         }
 
-        PresetIndex := index
         ShowStatus("Codex: " preset.Name)
         LogMessage("selected=" preset.TriggerLabel)
     }
@@ -466,12 +390,38 @@ SelectCombinedPreset(targetLabel)
 
     ; Do not open Effort against stale React state. Confirm that the parent
     ; row reflects the newly selected model first.
-    if !WaitVisibleElement(
+    updatedModelRow := WaitVisibleElement(
         windowElement,
         "^Model (?:GPT-)?5\.6 " targetModel "$",
         3000,
         "MenuItem"
     )
+
+    ; Some option variants close the parent picker immediately. Reopen its
+    ; persisted Advanced view, then verify the new model on the real parent
+    ; row before attempting to open Effort.
+    if !updatedModelRow
+    {
+        pickerTrigger := FindVisibleElement(
+            windowElement,
+            "^5\.6 (Luna|Terra|Sol) (Light|Medium|High|Extra High|Max|Ultra)( Fast)?$",
+            "Button"
+        )
+        if pickerTrigger
+        {
+            LogMessage("reopening picker after model selection")
+            pickerTrigger.Click()
+            Sleep(450)
+            updatedModelRow := WaitVisibleElement(
+                windowElement,
+                "^Model (?:GPT-)?5\.6 " targetModel "$",
+                2500,
+                "MenuItem"
+            )
+        }
+    }
+
+    if !updatedModelRow
     {
         LogMessage("model row did not update=" targetModel)
         try Send("{Escape}")
@@ -510,9 +460,10 @@ SelectCombinedPreset(targetLabel)
     }
 
     Sleep(250)
+    effortOptionPattern := GetEffortOptionPattern(targetEffort)
     effortOption := WaitVisibleElement(
         windowElement,
-        "^" targetEffort "$",
+        effortOptionPattern,
         1800,
         "MenuItem"
     )
@@ -542,6 +493,13 @@ SelectCombinedPreset(targetLabel)
     selectedLabel := WaitSelectedTriggerLabel(windowElement, targetLabel, 3000)
     LogMessage("advanced-selected=" selectedLabel)
     return selectedLabel = targetLabel
+}
+
+GetEffortOptionPattern(targetEffort)
+{
+    return targetEffort = "Ultra"
+        ? "^Ultra(?:\s+.+)?$"
+        : "^" targetEffort "$"
 }
 
 FindVisibleElement(windowElement, namePattern, controlType := "")

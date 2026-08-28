@@ -10,7 +10,11 @@ are:
 - F17: GPT-5.6 Sol Light
 - F18: GPT-5.6 Sol Extra High (`xhigh`)
 - F19: GPT-5.6 Sol Max
-- Ctrl+Alt+mouse wheel: cycle only these configured presets
+
+Ctrl+Alt+mouse-wheel preset cycling was removed on 2026-08-28 because it was
+unreliable and not needed. Existing installed `presets.ini` files remain
+preserved during upgrades, but the runtime ignores the old `CycleUp` and
+`CycleDown` keys.
 
 ## Local project
 

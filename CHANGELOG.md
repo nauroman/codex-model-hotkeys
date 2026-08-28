@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Remove configurable Ctrl+Alt+mouse-wheel preset cycling.
+- Recover when a model option closes the parent picker and accept descriptive
+  `Ultra` accessibility labels.
+- Restrict upgrade/uninstall process termination to the installed runtime,
+  including Codex package-redirected paths, and validate those path rules.
+
 ## 1.0.0 - 2026-08-28
 
 - Add complete model + reasoning-effort presets for F16–F19.

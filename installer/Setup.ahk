@@ -13,7 +13,23 @@ global SilentInstall := HasArgument("--silent")
 global SetupLogPath := A_Temp "\CodexModelHotkeys-Setup.log"
 
 if InStr(DllCall("GetCommandLine", "Str"), " --validate")
+{
+    redirectedRuntimePath := EnvGet("LOCALAPPDATA")
+        . "\Packages\OpenAI.Codex_Test\LocalCache\Local"
+        . "\CodexModelHotkeys\CodexModelHotkeys.exe"
+    if !IsInstalledRuntimePath(RuntimePath)
+        ExitApp(11)
+    if !IsInstalledRuntimePath(redirectedRuntimePath)
+        ExitApp(12)
+    if IsInstalledRuntimePath(EnvGet("LOCALAPPDATA") "\Other\CodexModelHotkeys.exe")
+        ExitApp(13)
+    unrelatedPackagePath := EnvGet("LOCALAPPDATA")
+        . "\Packages\Other.Package_Test\LocalCache\Local"
+        . "\CodexModelHotkeys\CodexModelHotkeys.exe"
+    if IsInstalledRuntimePath(unrelatedPackagePath)
+        ExitApp(14)
     ExitApp(0)
+}
 
 try InstallApplication()
 catch as err
@@ -101,7 +117,6 @@ InstallApplication()
             "F17  Sol Light`n"
             "F18  Sol Extra High`n"
             "F19  Sol Max`n`n"
-            "Ctrl+Alt+mouse wheel cycles the same presets.`n"
             "Right-click the tray icon to edit presets or open the log.",
             AppName,
             "Iconi"
@@ -111,12 +126,42 @@ InstallApplication()
 
 StopInstalledRuntime()
 {
-    processId := ProcessExist("CodexModelHotkeys.exe")
-    if !processId
-        return
+    try
+    {
+        service := ComObjGet("winmgmts:")
+        query := "SELECT ProcessId, ExecutablePath FROM Win32_Process "
+            . "WHERE Name = 'CodexModelHotkeys.exe'"
+        for process in service.ExecQuery(query)
+        {
+            try processPath := process.ExecutablePath
+            catch
+                processPath := ""
+            if !IsInstalledRuntimePath(processPath)
+                continue
 
-    try ProcessClose(processId)
-    try ProcessWaitClose(processId, 3)
+            processId := process.ProcessId
+            process.Terminate()
+            try ProcessWaitClose(processId, 3)
+        }
+    }
+}
+
+IsInstalledRuntimePath(processPath)
+{
+    global RuntimePath
+
+    candidate := StrLower(StrReplace(processPath, "/", "\"))
+    expected := StrLower(StrReplace(RuntimePath, "/", "\"))
+    if candidate = expected
+        return true
+
+    ; A process started from the packaged Codex app can report the Win32
+    ; LOCALAPPDATA redirection path even though the installed file is the same
+    ; per-user runtime. Accept only that exact redirected install suffix.
+    codexPackagesPrefix := StrLower(EnvGet("LOCALAPPDATA") "\Packages\OpenAI.Codex_")
+    redirectedSuffix := "\localcache\local\codexmodelhotkeys\codexmodelhotkeys.exe"
+    return InStr(candidate, codexPackagesPrefix) = 1
+        && RegExMatch(candidate, "\Q" redirectedSuffix "\E$")
 }
 
 StopLegacyRuntime()

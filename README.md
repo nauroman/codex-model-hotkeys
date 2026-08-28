@@ -31,7 +31,6 @@ the latest installer.
 | `F17` | GPT-5.6 Sol | Light |
 | `F18` | GPT-5.6 Sol | Extra High (`xhigh`) |
 | `F19` | GPT-5.6 Sol | Max |
-| `Ctrl+Alt+Wheel Up/Down` | Cycles through the same four presets | Included in each preset |
 
 The shortcuts are active only while a Codex window is active. They do not
 capture these keys globally in other applications.
