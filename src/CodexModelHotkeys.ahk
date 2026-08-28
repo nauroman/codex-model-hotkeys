@@ -23,9 +23,12 @@ UIA.SetMaximumDPIAwareness()
 Persistent true
 
 global AppName := "Codex Model Hotkeys"
-global AppVersion := "1.0.1"
+global AppVersion := "1.0.2"
 global ConfigPath := A_IsCompiled
     ? A_ScriptDir "\presets.ini"
+    : A_ScriptDir "\..\config\default-presets.ini"
+global GuidePath := A_IsCompiled
+    ? A_ScriptDir "\presets-reference.ini"
     : A_ScriptDir "\..\config\default-presets.ini"
 global DataDirectory := EnvGet("LOCALAPPDATA") "\CodexModelHotkeys"
 global LogPath := DataDirectory "\CodexModelHotkeys.log"
@@ -144,6 +147,7 @@ BuildTrayMenu()
 
     A_TrayMenu.Add()
     A_TrayMenu.Add("Open presets.ini", OpenConfiguration)
+    A_TrayMenu.Add("Open configuration guide", OpenConfigurationGuide)
     A_TrayMenu.Add("Open log", OpenLog)
     A_TrayMenu.Add("Reload", ReloadApplication)
     A_TrayMenu.Add("Exit", ExitApplication)
@@ -154,6 +158,12 @@ OpenConfiguration(*)
 {
     global ConfigPath
     Run('notepad.exe "' ConfigPath '"')
+}
+
+OpenConfigurationGuide(*)
+{
+    global GuidePath
+    Run('notepad.exe "' GuidePath '"')
 }
 
 OpenLog(*)

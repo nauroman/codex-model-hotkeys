@@ -57,6 +57,11 @@ AutoHotkey hotkey. Invalid sections are skipped and invalid hotkey expressions
 are written to the log. If no valid presets remain, the built-in defaults are
 used.
 
+New installations receive the fully commented default file as `presets.ini`.
+Every installation also receives `presets-reference.ini`, which is refreshed
+on upgrades and can be opened from the tray menu. The active `presets.ini` is
+never overwritten during an upgrade.
+
 ## Boundaries
 
 - No Codex configuration file is modified.

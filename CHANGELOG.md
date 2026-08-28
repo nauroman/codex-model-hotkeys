@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 - 2026-08-28
+
+- Replace the terse installer success message with a beginner-friendly guide
+  covering shortcuts, tray icon discovery, configuration, reload, and logs.
+- Add comprehensive inline documentation to the default `presets.ini`.
+- Install an always-current `presets-reference.ini` and expose it in the tray
+  menu without overwriting the user's active configuration during upgrades.
+
 ## 1.0.1 - 2026-08-28
 
 - Remove configurable Ctrl+Alt+mouse-wheel preset cycling.

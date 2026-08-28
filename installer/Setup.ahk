@@ -3,10 +3,11 @@
 #NoTrayIcon
 
 global AppName := "Codex Model Hotkeys"
-global AppVersion := "1.0.1"
+global AppVersion := "1.0.2"
 global InstallDirectory := EnvGet("LOCALAPPDATA") "\CodexModelHotkeys"
 global RuntimePath := InstallDirectory "\CodexModelHotkeys.exe"
 global ConfigPath := InstallDirectory "\presets.ini"
+global GuidePath := InstallDirectory "\presets-reference.ini"
 global StartupShortcut := A_Startup "\CodexModelHotkeys.lnk"
 global RepositoryUrl := "https://github.com/nauroman/codex-model-hotkeys"
 global SilentInstall := HasArgument("--silent")
@@ -56,7 +57,7 @@ catch as err
 
 InstallApplication()
 {
-    global AppName, AppVersion, InstallDirectory, RuntimePath, ConfigPath
+    global AppName, AppVersion, InstallDirectory, RuntimePath, ConfigPath, GuidePath
     global StartupShortcut, RepositoryUrl, SilentInstall, SetupLogPath
 
     try FileAppend(
@@ -72,6 +73,9 @@ InstallApplication()
     FileInstall("..\dist\CodexModelHotkeys.exe", RuntimePath, true)
     if !FileExist(ConfigPath)
         FileInstall("..\config\default-presets.ini", ConfigPath, false)
+    ; Always refresh the reference copy while preserving the user's active
+    ; presets.ini byte-for-byte during upgrades.
+    FileInstall("..\config\default-presets.ini", GuidePath, true)
     FileInstall("Uninstall.ps1", InstallDirectory "\Uninstall.ps1", true)
     FileInstall("..\LICENSE", InstallDirectory "\LICENSE.txt", true)
     FileInstall("..\THIRD_PARTY_NOTICES.md", InstallDirectory "\THIRD_PARTY_NOTICES.md", true)
@@ -111,17 +115,53 @@ InstallApplication()
         "UTF-8"
     )
     if !SilentInstall
-        MsgBox(
-            "Installed successfully.`n`n"
-            "F16  Luna High`n"
-            "F17  Sol Light`n"
-            "F18  Sol Extra High`n"
-            "F19  Sol Max`n`n"
-            "Right-click the tray icon to edit presets or open the log.",
-            AppName,
-            "Iconi"
-        )
+        ShowInstallationGuide()
     ExitApp(0)
+}
+
+ShowInstallationGuide()
+{
+    global AppName, AppVersion
+
+    guideGui := Gui("+OwnDialogs", AppName " " AppVersion)
+    guideGui.MarginX := 24
+    guideGui.MarginY := 20
+
+    guideGui.SetFont("s14 Bold", "Segoe UI")
+    guideGui.AddText("w680", "Installation completed successfully")
+
+    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.AddText("y+8 w680", "Codex Model Hotkeys is now running in the background and will start automatically when you sign in to Windows.")
+
+    guideGui.SetFont("s10 Bold", "Segoe UI")
+    guideGui.AddText("y+14 w680", "Default shortcuts")
+    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.AddText("y+4 w680", "F16  -  Luna High        F17  -  Sol Light        F18  -  Sol Extra High        F19  -  Sol Max")
+    guideGui.AddText("y+3 w680", "If your keyboard does not have F16-F19 keys, use the customization steps below to assign combinations such as Ctrl+Alt+1 through Ctrl+Alt+4.")
+
+    guideGui.SetFont("s10 Bold", "Segoe UI")
+    guideGui.AddText("y+14 w680", "How to use it")
+    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.AddText("y+4 w680", "1. Open or activate the Codex desktop app.`n2. Press one of the shortcuts above.`n3. The utility selects both the model and its reasoning effort. A small status message confirms the result.")
+
+    guideGui.SetFont("s10 Bold", "Segoe UI")
+    guideGui.AddText("y+14 w680", "Where to find the tray icon")
+    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.AddText("y+4 w680", "1. Look in the Windows notification area at the bottom-right of the screen, near the clock.`n2. If the icon is hidden, click the ^ arrow to show hidden icons.`n3. Find the green H icon. Hover over it to see '" AppName " " AppVersion "'.`n4. Right-click that icon to open the utility menu. It contains the presets, configuration files, log, Reload, and Exit.")
+
+    guideGui.SetFont("s10 Bold", "Segoe UI")
+    guideGui.AddText("y+14 w680", "How to customize shortcuts, models, or effort")
+    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.AddText("y+4 w680", "1. Right-click the green H tray icon and choose Open presets.ini.`n2. Follow the detailed instructions at the top of the file, then save it with Ctrl+S.`n3. Right-click the H icon again and choose Reload to apply your changes.`n4. Open configuration guide shows an always-current commented example. Upgrades never overwrite your active presets.ini.`n5. If something does not work, choose Open log from the same tray menu.")
+
+    guideGui.SetFont("s9 Norm", "Segoe UI")
+    finishButton := guideGui.AddButton("y+18 w110 h30 Default", "Finish")
+
+    finishButton.OnEvent("Click", (*) => guideGui.Destroy())
+    guideGui.OnEvent("Close", (*) => guideGui.Destroy())
+
+    guideGui.Show("AutoSize Center")
+    WinWaitClose("ahk_id " guideGui.Hwnd)
 }
 
 StopInstalledRuntime()
