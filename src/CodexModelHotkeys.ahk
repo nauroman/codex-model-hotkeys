@@ -23,7 +23,7 @@ UIA.SetMaximumDPIAwareness()
 Persistent true
 
 global AppName := "Codex Model Hotkeys"
-global AppVersion := "1.0.0"
+global AppVersion := "1.0.1"
 global ConfigPath := A_IsCompiled
     ? A_ScriptDir "\presets.ini"
     : A_ScriptDir "\..\config\default-presets.ini"

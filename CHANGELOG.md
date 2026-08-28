@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 - 2026-08-28
 
 - Remove configurable Ctrl+Alt+mouse-wheel preset cycling.
+- Remove the obsolete mouse-wheel cycling claim from the installer success
+  message and published default configuration.
 - Recover when a model option closes the parent picker and accept descriptive
   `Ultra` accessibility labels.
 - Restrict upgrade/uninstall process termination to the installed runtime,
