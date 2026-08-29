@@ -1,8 +1,12 @@
 .tools/
+.build/
 *.log
 *.tmp
 dist/*.exe
 dist/*.sha256
+dist/msix/
+dist/store-assets/
+packaging/msix/StoreIdentity.json
 !dist/README.md
 .vs/
 .vscode/

@@ -2,33 +2,38 @@
 #SingleInstance Force
 #NoTrayIcon
 
-global AppName := "Codex Model Hotkeys"
+global AppName := "ReasonKey"
 global AppVersion := "1.0.3"
-global InstallDirectory := EnvGet("LOCALAPPDATA") "\CodexModelHotkeys"
-global RuntimePath := InstallDirectory "\CodexModelHotkeys.exe"
+global InstallDirectory := EnvGet("LOCALAPPDATA") "\ReasonKey"
+global RuntimePath := InstallDirectory "\ReasonKey.exe"
 global ConfigPath := InstallDirectory "\presets.ini"
 global GuidePath := InstallDirectory "\presets-reference.ini"
-global StartupShortcut := A_Startup "\CodexModelHotkeys.lnk"
+global StartupShortcut := A_Startup "\ReasonKey.lnk"
+global LegacyInstallDirectory := EnvGet("LOCALAPPDATA") "\CodexModelHotkeys"
+global LegacyRuntimePath := LegacyInstallDirectory "\CodexModelHotkeys.exe"
+global LegacyStartupShortcut := A_Startup "\CodexModelHotkeys.lnk"
 global RepositoryUrl := "https://github.com/nauroman/codex-model-hotkeys"
 global SilentInstall := HasArgument("--silent")
-global SetupLogPath := A_Temp "\CodexModelHotkeys-Setup.log"
+global SetupLogPath := A_Temp "\ReasonKey-Setup.log"
 
 if InStr(DllCall("GetCommandLine", "Str"), " --validate")
 {
     redirectedRuntimePath := EnvGet("LOCALAPPDATA")
         . "\Packages\OpenAI.Codex_Test\LocalCache\Local"
-        . "\CodexModelHotkeys\CodexModelHotkeys.exe"
+        . "\ReasonKey\ReasonKey.exe"
     if !IsInstalledRuntimePath(RuntimePath)
         ExitApp(11)
     if !IsInstalledRuntimePath(redirectedRuntimePath)
         ExitApp(12)
-    if IsInstalledRuntimePath(EnvGet("LOCALAPPDATA") "\Other\CodexModelHotkeys.exe")
+    if !IsInstalledRuntimePath(LegacyRuntimePath)
         ExitApp(13)
+    if IsInstalledRuntimePath(EnvGet("LOCALAPPDATA") "\Other\ReasonKey.exe")
+        ExitApp(14)
     unrelatedPackagePath := EnvGet("LOCALAPPDATA")
         . "\Packages\Other.Package_Test\LocalCache\Local"
-        . "\CodexModelHotkeys\CodexModelHotkeys.exe"
+        . "\ReasonKey\ReasonKey.exe"
     if IsInstalledRuntimePath(unrelatedPackagePath)
-        ExitApp(14)
+        ExitApp(15)
     ExitApp(0)
 }
 
@@ -59,6 +64,7 @@ InstallApplication()
 {
     global AppName, AppVersion, InstallDirectory, RuntimePath, ConfigPath, GuidePath
     global StartupShortcut, RepositoryUrl, SilentInstall, SetupLogPath
+    global LegacyInstallDirectory, LegacyStartupShortcut
 
     try FileAppend(
         FormatTime(, "yyyy-MM-dd HH:mm:ss") " install-start version=" AppVersion "`n",
@@ -69,8 +75,9 @@ InstallApplication()
     StopInstalledRuntime()
     StopLegacyRuntime()
     DirCreate(InstallDirectory)
+    MigrateLegacyConfiguration()
 
-    FileInstall("..\dist\CodexModelHotkeys.exe", RuntimePath, true)
+    FileInstall("..\dist\ReasonKey.exe", RuntimePath, true)
     if !FileExist(ConfigPath)
         FileInstall("..\config\default-presets.ini", ConfigPath, false)
     ; Always refresh the reference copy while preserving the user's active
@@ -87,9 +94,12 @@ InstallApplication()
 
     if FileExist(StartupShortcut)
         FileDelete(StartupShortcut)
+    if FileExist(LegacyStartupShortcut)
+        FileDelete(LegacyStartupShortcut)
     FileCreateShortcut(RuntimePath, StartupShortcut, InstallDirectory, "", AppName)
 
-    uninstallKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexModelHotkeys"
+    uninstallKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\ReasonKey"
+    legacyUninstallKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexModelHotkeys"
     uninstallCommand := Format(
         'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{1}\Uninstall.ps1"',
         InstallDirectory
@@ -98,7 +108,7 @@ InstallApplication()
 
     RegWrite(AppName, "REG_SZ", uninstallKey, "DisplayName")
     RegWrite(AppVersion, "REG_SZ", uninstallKey, "DisplayVersion")
-    RegWrite("Codex Model Hotkeys contributors", "REG_SZ", uninstallKey, "Publisher")
+    RegWrite("Rotorlash Labs", "REG_SZ", uninstallKey, "Publisher")
     RegWrite(RuntimePath, "REG_SZ", uninstallKey, "DisplayIcon")
     RegWrite(InstallDirectory, "REG_SZ", uninstallKey, "InstallLocation")
     RegWrite(RepositoryUrl, "REG_SZ", uninstallKey, "URLInfoAbout")
@@ -107,6 +117,12 @@ InstallApplication()
     RegWrite(1, "REG_DWORD", uninstallKey, "NoModify")
     RegWrite(1, "REG_DWORD", uninstallKey, "NoRepair")
     RegWrite(2500, "REG_DWORD", uninstallKey, "EstimatedSize")
+    try RegDelete(legacyUninstallKey)
+
+    ; The new installation and migrated configuration are now durable. Remove
+    ; the obsolete product directory so Installed Apps exposes one product.
+    if FileExist(ConfigPath)
+        RemoveLegacyInstallationDirectory()
 
     Run('"' RuntimePath '"', InstallDirectory)
     try FileAppend(
@@ -131,7 +147,7 @@ ShowInstallationGuide()
     guideGui.AddText("w680", "Installation completed successfully")
 
     guideGui.SetFont("s9 Norm", "Segoe UI")
-    guideGui.AddText("y+8 w680", "Codex Model Hotkeys is now running in the background and will start automatically when you sign in to Windows.")
+    guideGui.AddText("y+8 w680", "ReasonKey is now running in the background and will start automatically when you sign in to Windows.")
 
     guideGui.SetFont("s10 Bold", "Segoe UI")
     guideGui.AddText("y+14 w680", "Default shortcuts")
@@ -142,7 +158,7 @@ ShowInstallationGuide()
     guideGui.SetFont("s10 Bold", "Segoe UI")
     guideGui.AddText("y+14 w680", "How to use it")
     guideGui.SetFont("s9 Norm", "Segoe UI")
-    guideGui.AddText("y+4 w680", "1. Open or activate the Codex desktop app.`n2. Press one of the shortcuts above.`n3. The utility selects both the model and its reasoning effort. A small status message confirms the result.")
+    guideGui.AddText("y+4 w680", "1. Open or activate the Codex/ChatGPT desktop app and use either a Codex or ChatGPT Chat composer.`n2. Press one of the shortcuts above.`n3. ReasonKey selects the configured model and effort for that composer. A small status message confirms the result.")
 
     guideGui.SetFont("s10 Bold", "Segoe UI")
     guideGui.AddText("y+14 w680", "Where to find the tray icon")
@@ -170,7 +186,7 @@ StopInstalledRuntime()
     {
         service := ComObjGet("winmgmts:")
         query := "SELECT ProcessId, ExecutablePath FROM Win32_Process "
-            . "WHERE Name = 'CodexModelHotkeys.exe'"
+            . "WHERE Name = 'ReasonKey.exe' OR Name = 'CodexModelHotkeys.exe'"
         for process in service.ExecQuery(query)
         {
             try processPath := process.ExecutablePath
@@ -188,20 +204,72 @@ StopInstalledRuntime()
 
 IsInstalledRuntimePath(processPath)
 {
-    global RuntimePath
+    global RuntimePath, LegacyRuntimePath
 
     candidate := StrLower(StrReplace(processPath, "/", "\"))
     expected := StrLower(StrReplace(RuntimePath, "/", "\"))
-    if candidate = expected
+    legacyExpected := StrLower(StrReplace(LegacyRuntimePath, "/", "\"))
+    if candidate = expected || candidate = legacyExpected
         return true
 
     ; A process started from the packaged Codex app can report the Win32
     ; LOCALAPPDATA redirection path even though the installed file is the same
     ; per-user runtime. Accept only that exact redirected install suffix.
     codexPackagesPrefix := StrLower(EnvGet("LOCALAPPDATA") "\Packages\OpenAI.Codex_")
-    redirectedSuffix := "\localcache\local\codexmodelhotkeys\codexmodelhotkeys.exe"
-    return InStr(candidate, codexPackagesPrefix) = 1
-        && RegExMatch(candidate, "\Q" redirectedSuffix "\E$")
+    redirectedSuffixes := [
+        "\localcache\local\reasonkey\reasonkey.exe",
+        "\localcache\local\codexmodelhotkeys\codexmodelhotkeys.exe"
+    ]
+    if InStr(candidate, codexPackagesPrefix) != 1
+        return false
+    for redirectedSuffix in redirectedSuffixes
+    {
+        if RegExMatch(candidate, "\Q" redirectedSuffix "\E$")
+            return true
+    }
+    return false
+}
+
+MigrateLegacyConfiguration()
+{
+    global ConfigPath, LegacyInstallDirectory
+
+    if FileExist(ConfigPath)
+        return
+    legacyConfigPath := LegacyInstallDirectory "\presets.ini"
+    if FileExist(legacyConfigPath)
+        FileCopy(legacyConfigPath, ConfigPath, false)
+}
+
+RemoveLegacyInstallationDirectory()
+{
+    global LegacyInstallDirectory, SetupLogPath
+
+    cleanupError := ""
+    loop 5
+    {
+        if !DirExist(LegacyInstallDirectory)
+            return
+        try
+        {
+            DirDelete(LegacyInstallDirectory, true)
+        }
+        catch as err
+        {
+            cleanupError := err.Message
+        }
+        if !DirExist(LegacyInstallDirectory)
+            return
+        Sleep(250)
+    }
+
+    try FileAppend(
+        FormatTime(, "yyyy-MM-dd HH:mm:ss")
+        " legacy-cleanup-warning=" cleanupError
+        " path=" LegacyInstallDirectory "`n",
+        SetupLogPath,
+        "UTF-8"
+    )
 }
 
 StopLegacyRuntime()

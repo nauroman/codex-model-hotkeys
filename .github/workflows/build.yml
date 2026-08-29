@@ -12,11 +12,18 @@ jobs:
       - name: Build runtime and installer
         shell: powershell
         run: .\scripts\Build.ps1 -Clean
+      - name: Build unsigned MSIX structure
+        shell: powershell
+        run: .\scripts\Build-Msix.ps1 -Clean -SkipRuntimeBuild
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CodexModelHotkeys-Windows
+          name: ReasonKey-Windows
           path: |
-            dist/CodexModelHotkeys.exe
-            dist/CodexModelHotkeys-Setup.exe
-            dist/CodexModelHotkeys-Setup.exe.sha256
+            dist/ReasonKey.exe
+            dist/ReasonKey-Setup.exe
+            dist/ReasonKey-Setup.exe.sha256
+            dist/msix/*.msix
+            dist/msix/*.msix.sha256
+            dist/msix/*.msix.build.json
+            dist/store-assets/*.png

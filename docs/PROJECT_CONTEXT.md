@@ -2,8 +2,8 @@
 
 ## Goal
 
-Provide an easy public Windows utility that switches the Codex desktop picker
-to a complete model + reasoning-effort preset. The original requested presets
+Provide **ReasonKey**, an easy public Windows utility that switches model and
+effort presets in both the Codex and ChatGPT Chat composers. The original Codex presets
 are:
 
 - F16: GPT-5.6 Luna High
@@ -15,6 +15,18 @@ Ctrl+Alt+mouse-wheel preset cycling was removed on 2026-08-28 because it was
 unreliable and not needed. Existing installed `presets.ini` files remain
 preserved during upgrades, but the runtime ignores the old `CycleUp` and
 `CycleDown` keys.
+
+The repository also maintains an MSIX/Microsoft Store channel under the
+**ReasonKey** product name and **Rotorlash Labs** publisher. It shares the
+compiled runtime, uses package `LocalState` for writable configuration/logs,
+migrates but does not delete an existing direct-install configuration, and
+registers an optional startup task disabled by default. Store identity values
+must come exactly from Partner Center; never invent or commit them.
+
+The public name changed from **Codex Model Hotkeys** to **ReasonKey** before
+the first Store submission. New artifacts, paths, and application metadata use
+`ReasonKey`; upgrade paths preserve `presets.ini` from the legacy
+`CodexModelHotkeys` data directory.
 
 ## Local project
 
@@ -71,6 +83,22 @@ Model submenu options include `5.6 Sol`, `5.6 Terra`, and `5.6 Luna`. Effort
 submenu options include `Light`, `Medium`, `High`, `Extra High`, `Max`, and
 sometimes `Ultra` with additional descriptive text.
 
+The 2026-08-29 Chat composer in desktop package
+`OpenAI.Codex_26.825.5331.0_x64__2p2nqsd0c76g0` differs from Codex:
+
+```text
+Button: Select ChatGPT model
+Advanced row: Model 5.6 Sol
+Advanced row: Effort Instant
+Compact visible value examples: Instant, Extra High
+```
+
+Chat exposes `Instant`, `Medium`, `High`, `Extra High`, and `Pro`, but the four
+default hotkeys intentionally use an independent sequence: F16 → Instant,
+F17 → Medium, F18 → High, and F19 → Pro. Their Codex selections remain Luna
+High, Sol Light, Sol Extra High, and Sol Max. Both Chat screenshots confirmed
+the expanded Advanced rows and the compact Power-slider state.
+
 ## Root causes already solved
 
 1. Codex desktop did not honor an attempted `.codex/keybindings.json` solution.
@@ -89,6 +117,11 @@ sometimes `Ultra` with additional descriptive text.
    match the real Button control and wait for the exact target label.
 9. Wait for the Model parent row to update before opening Effort; then wait for
    the Effort row to update before final verification.
+10. Chat's Button has the stable accessible name `Select ChatGPT model`, so it
+    cannot be discovered or verified with the Codex combined-label selector.
+    Detect it explicitly, then bound final effort-text verification to that
+    real Button. If its aria-label suppresses child Text controls, reopen the
+    same Button and confirm the persisted Effort parent row.
 
 ## Last verified runtime evidence
 
@@ -130,3 +163,21 @@ Codex UI Automation labels are not a documented public API. When a desktop app
 update breaks a selector, inspect the live UIA tree and the installed webview
 source before changing behavior. Preserve support for both initial picker modes
 and validate real state changes rather than compensating with delays alone.
+
+## Store release boundary
+
+The Partner Center product name **ReasonKey** is reserved under **Rotorlash
+Labs**. Its exact Package/Identity Name, Publisher ID, and publisher display
+name are stored only in the gitignored `packaging/msix/StoreIdentity.json`.
+The repository contains the MSIX manifest template, generated-asset pipeline,
+local signing/test scripts, privacy policy, English listing copy, certification
+notes, and submission checklist. The unsigned Store-identity package has been
+built. The elevated packaged-runtime test passed with exit code `0`. WACK
+10.0.26100.8249 completed with overall `WARNING`, not `FAIL`: its optional
+blocked-executable test detected generic AutoHotkey runtime strings/APIs, and
+its DPI analyzer could not process the Ahk2Exe binary. The checked-in
+certification notes explain both findings, while a runtime probe of the exact
+manifest-updated packaged executable confirmed
+`PROCESS_PER_MONITOR_DPI_AWARE` (`2`). The real Codex/ChatGPT regression
+matrix, Partner Center listing entry, package upload, certification, and public
+post-certification validation remain separate gates.

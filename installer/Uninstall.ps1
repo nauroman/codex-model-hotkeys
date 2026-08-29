@@ -5,23 +5,35 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$appName = 'Codex Model Hotkeys'
+$appName = 'ReasonKey'
 $expectedInstallDirectory = [IO.Path]::GetFullPath(
+    (Join-Path $env:LOCALAPPDATA 'ReasonKey')
+).TrimEnd([IO.Path]::DirectorySeparatorChar)
+$legacyInstallDirectory = [IO.Path]::GetFullPath(
     (Join-Path $env:LOCALAPPDATA 'CodexModelHotkeys')
 ).TrimEnd([IO.Path]::DirectorySeparatorChar)
 $scriptInstallDirectory = [IO.Path]::GetFullPath(
     (Split-Path -Parent $PSCommandPath)
 ).TrimEnd([IO.Path]::DirectorySeparatorChar)
-$startupShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup\CodexModelHotkeys.lnk'
-$uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexModelHotkeys'
+$startupShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup\ReasonKey.lnk'
+$legacyStartupShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup\CodexModelHotkeys.lnk'
+$uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\ReasonKey'
+$legacyUninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexModelHotkeys'
 
-$runtimePath = Join-Path $expectedInstallDirectory 'CodexModelHotkeys.exe'
+$runtimePath = Join-Path $expectedInstallDirectory 'ReasonKey.exe'
+$legacyRuntimePath = Join-Path $legacyInstallDirectory 'CodexModelHotkeys.exe'
 $packagesPrefix = ([IO.Path]::GetFullPath(
     (Join-Path $env:LOCALAPPDATA 'Packages')
 ).TrimEnd([IO.Path]::DirectorySeparatorChar)) + [IO.Path]::DirectorySeparatorChar
 $codexPackagesPrefix = $packagesPrefix + 'OpenAI.Codex_'
-$redirectedInstallSuffix = '\LocalCache\Local\CodexModelHotkeys'
-$redirectedRuntimeSuffix = '\LocalCache\Local\CodexModelHotkeys\CodexModelHotkeys.exe'
+$redirectedInstallSuffixes = @(
+    '\LocalCache\Local\ReasonKey',
+    '\LocalCache\Local\CodexModelHotkeys'
+)
+$redirectedRuntimeSuffixes = @(
+    '\LocalCache\Local\ReasonKey\ReasonKey.exe',
+    '\LocalCache\Local\CodexModelHotkeys\CodexModelHotkeys.exe'
+)
 
 function Test-IsExpectedInstallDirectory {
     param([string]$DirectoryPath)
@@ -36,9 +48,19 @@ function Test-IsExpectedInstallDirectory {
     if ($candidate.Equals($expectedInstallDirectory, [StringComparison]::OrdinalIgnoreCase)) {
         return $true
     }
+    if ($candidate.Equals($legacyInstallDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+        return $true
+    }
 
-    return $candidate.StartsWith($codexPackagesPrefix, [StringComparison]::OrdinalIgnoreCase) -and
-        $candidate.EndsWith($redirectedInstallSuffix, [StringComparison]::OrdinalIgnoreCase)
+    if (-not $candidate.StartsWith($codexPackagesPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+    foreach ($suffix in $redirectedInstallSuffixes) {
+        if ($candidate.EndsWith($suffix, [StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+    return $false
 }
 
 function Test-IsInstalledRuntimePath {
@@ -52,41 +74,57 @@ function Test-IsInstalledRuntimePath {
     if ($candidate.Equals($runtimePath, [StringComparison]::OrdinalIgnoreCase)) {
         return $true
     }
+    if ($candidate.Equals($legacyRuntimePath, [StringComparison]::OrdinalIgnoreCase)) {
+        return $true
+    }
 
-    return $candidate.StartsWith($codexPackagesPrefix, [StringComparison]::OrdinalIgnoreCase) -and
-        $candidate.EndsWith($redirectedRuntimeSuffix, [StringComparison]::OrdinalIgnoreCase)
+    if (-not $candidate.StartsWith($codexPackagesPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+    foreach ($suffix in $redirectedRuntimeSuffixes) {
+        if ($candidate.EndsWith($suffix, [StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+    return $false
 }
 
 if ($Validate) {
     $redirectedSample = Join-Path $packagesPrefix `
-        'OpenAI.Codex_Test\LocalCache\Local\CodexModelHotkeys\CodexModelHotkeys.exe'
+        'OpenAI.Codex_Test\LocalCache\Local\ReasonKey\ReasonKey.exe'
     if (-not (Test-IsInstalledRuntimePath $runtimePath)) {
         throw 'Runtime path validation rejected the installed path.'
     }
     if (-not (Test-IsInstalledRuntimePath $redirectedSample)) {
         throw 'Runtime path validation rejected the package-redirected path.'
     }
-    if (Test-IsInstalledRuntimePath (Join-Path $env:LOCALAPPDATA 'Other\CodexModelHotkeys.exe')) {
+    if (-not (Test-IsInstalledRuntimePath $legacyRuntimePath)) {
+        throw 'Runtime path validation rejected the legacy installed path.'
+    }
+    if (Test-IsInstalledRuntimePath (Join-Path $env:LOCALAPPDATA 'Other\ReasonKey.exe')) {
         throw 'Runtime path validation accepted an unrelated path.'
     }
     $unrelatedPackageSample = Join-Path $packagesPrefix `
-        'Other.Package_Test\LocalCache\Local\CodexModelHotkeys\CodexModelHotkeys.exe'
+        'Other.Package_Test\LocalCache\Local\ReasonKey\ReasonKey.exe'
     if (Test-IsInstalledRuntimePath $unrelatedPackageSample) {
         throw 'Runtime path validation accepted another package path.'
     }
     $redirectedInstallSample = Join-Path $packagesPrefix `
-        'OpenAI.Codex_Test\LocalCache\Local\CodexModelHotkeys'
+        'OpenAI.Codex_Test\LocalCache\Local\ReasonKey'
     if (-not (Test-IsExpectedInstallDirectory $expectedInstallDirectory)) {
         throw 'Install directory validation rejected the canonical path.'
     }
     if (-not (Test-IsExpectedInstallDirectory $redirectedInstallSample)) {
         throw 'Install directory validation rejected the package-redirected path.'
     }
-    if (Test-IsExpectedInstallDirectory (Join-Path $env:LOCALAPPDATA 'Other\CodexModelHotkeys')) {
+    if (-not (Test-IsExpectedInstallDirectory $legacyInstallDirectory)) {
+        throw 'Install directory validation rejected the legacy path.'
+    }
+    if (Test-IsExpectedInstallDirectory (Join-Path $env:LOCALAPPDATA 'Other\ReasonKey')) {
         throw 'Install directory validation accepted an unrelated path.'
     }
     $unrelatedInstallSample = Join-Path $packagesPrefix `
-        'Other.Package_Test\LocalCache\Local\CodexModelHotkeys'
+        'Other.Package_Test\LocalCache\Local\ReasonKey'
     if (Test-IsExpectedInstallDirectory $unrelatedInstallSample) {
         throw 'Install directory validation accepted another package path.'
     }
@@ -103,7 +141,7 @@ if (-not $scriptInstallDirectory.Equals(
 if (-not $Silent) {
     Add-Type -AssemblyName PresentationFramework
     $choice = [Windows.MessageBox]::Show(
-        'Remove Codex Model Hotkeys, its presets, and its logs?',
+        'Remove ReasonKey, its presets, and its logs?',
         $appName,
         [Windows.MessageBoxButton]::YesNo,
         [Windows.MessageBoxImage]::Question
@@ -113,7 +151,7 @@ if (-not $Silent) {
     }
 }
 
-Get-CimInstance Win32_Process -Filter "Name = 'CodexModelHotkeys.exe'" -ErrorAction SilentlyContinue |
+Get-CimInstance Win32_Process -Filter "Name = 'ReasonKey.exe' OR Name = 'CodexModelHotkeys.exe'" -ErrorAction SilentlyContinue |
     Where-Object { Test-IsInstalledRuntimePath $_.ExecutablePath } |
     ForEach-Object {
         Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
@@ -125,15 +163,17 @@ $packagesDirectory = $packagesPrefix.TrimEnd([IO.Path]::DirectorySeparatorChar)
 if (Test-Path -LiteralPath $packagesDirectory) {
     foreach ($packageDirectory in Get-ChildItem -LiteralPath $packagesDirectory `
             -Directory -Filter 'OpenAI.Codex_*' -ErrorAction SilentlyContinue) {
-        $candidate = Join-Path $packageDirectory.FullName `
-            'LocalCache\Local\CodexModelHotkeys'
-        if ((Test-Path -LiteralPath $candidate) -and
-            (Test-IsExpectedInstallDirectory $candidate)) {
-            $installDirectoriesToRemove += [IO.Path]::GetFullPath($candidate)
+        foreach ($relativeDirectory in @('LocalCache\Local\ReasonKey', 'LocalCache\Local\CodexModelHotkeys')) {
+            $candidate = Join-Path $packageDirectory.FullName $relativeDirectory
+            if ((Test-Path -LiteralPath $candidate) -and
+                (Test-IsExpectedInstallDirectory $candidate)) {
+                $installDirectoriesToRemove += [IO.Path]::GetFullPath($candidate)
+            }
         }
     }
 }
 $installDirectoriesToRemove += $expectedInstallDirectory
+$installDirectoriesToRemove += $legacyInstallDirectory
 
 foreach ($installDirectory in $installDirectoriesToRemove | Select-Object -Unique) {
     if (-not (Test-IsExpectedInstallDirectory $installDirectory)) {
@@ -143,16 +183,20 @@ foreach ($installDirectory in $installDirectoriesToRemove | Select-Object -Uniqu
         Remove-Item -LiteralPath $installDirectory -Recurse -Force
     }
 }
-if (Test-Path -LiteralPath $startupShortcut) {
-    Remove-Item -LiteralPath $startupShortcut -Force
+foreach ($shortcut in @($startupShortcut, $legacyStartupShortcut)) {
+    if (Test-Path -LiteralPath $shortcut) {
+        Remove-Item -LiteralPath $shortcut -Force
+    }
 }
-if (Test-Path -LiteralPath $uninstallKey) {
-    Remove-Item -LiteralPath $uninstallKey -Recurse -Force
+foreach ($key in @($uninstallKey, $legacyUninstallKey)) {
+    if (Test-Path -LiteralPath $key) {
+        Remove-Item -LiteralPath $key -Recurse -Force
+    }
 }
 
 if (-not $Silent) {
     [Windows.MessageBox]::Show(
-        'Codex Model Hotkeys was removed.',
+        'ReasonKey was removed.',
         $appName,
         [Windows.MessageBoxButton]::OK,
         [Windows.MessageBoxImage]::Information

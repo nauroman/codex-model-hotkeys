@@ -25,7 +25,7 @@ if ($null -eq $baseExecutable) {
         Select-Object -First 1 -ExpandProperty FullName
     if ($null -eq $downloadedBase) {
         Write-Host 'Downloading the official AutoHotkey v2 portable release...'
-        $release = Invoke-RestMethod -Headers @{ 'User-Agent' = 'CodexModelHotkeys-Build' } `
+        $release = Invoke-RestMethod -Headers @{ 'User-Agent' = 'ReasonKey-Build' } `
             -Uri 'https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest'
         $asset = $release.assets | Where-Object { $_.name -like 'AutoHotkey_2*.zip' } |
             Select-Object -First 1
@@ -59,7 +59,7 @@ $compiler = $compilerCandidates | Where-Object { Test-Path -LiteralPath $_ } | S
 
 if ($null -eq $compiler) {
     Write-Host 'Downloading the official Ahk2Exe compiler...'
-    $release = Invoke-RestMethod -Headers @{ 'User-Agent' = 'CodexModelHotkeys-Build' } `
+    $release = Invoke-RestMethod -Headers @{ 'User-Agent' = 'ReasonKey-Build' } `
         -Uri 'https://api.github.com/repos/AutoHotkey/Ahk2Exe/releases/latest'
     $asset = $release.assets | Where-Object { $_.name -like 'Ahk2Exe*.zip' } | Select-Object -First 1
     if ($null -eq $asset) {
@@ -81,11 +81,11 @@ if ($null -eq $compiler) {
         Select-Object -First 1 -ExpandProperty FullName
 }
 
-$runtimeSource = Join-Path $repositoryRoot 'src\CodexModelHotkeys.ahk'
-$runtimeOutput = Join-Path $distDirectory 'CodexModelHotkeys.exe'
+$runtimeSource = Join-Path $repositoryRoot 'src\ReasonKey.ahk'
+$runtimeOutput = Join-Path $distDirectory 'ReasonKey.exe'
 $setupSource = Join-Path $repositoryRoot 'installer\Setup.ahk'
-$setupOutput = Join-Path $distDirectory 'CodexModelHotkeys-Setup.exe'
-$iconPath = Join-Path $repositoryRoot 'assets\CodexModelHotkeys.ico'
+$setupOutput = Join-Path $distDirectory 'ReasonKey-Setup.exe'
+$iconPath = Join-Path $repositoryRoot 'assets\ReasonKey.ico'
 
 if (-not (Test-Path -LiteralPath $iconPath)) {
     throw "Application icon not found: $iconPath"
@@ -96,7 +96,7 @@ $runtimeCompileArguments = '/in "{0}" /out "{1}" /base "{2}" /icon "{3}" /compre
 $runtimeCompile = Start-Process -FilePath $compiler -ArgumentList $runtimeCompileArguments `
     -PassThru -Wait -WindowStyle Hidden
 if ($runtimeCompile.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $runtimeOutput)) {
-    throw 'Failed to compile CodexModelHotkeys.exe.'
+    throw 'Failed to compile ReasonKey.exe.'
 }
 
 $runtimeValidation = Start-Process -FilePath $runtimeOutput -ArgumentList '--validate' `
@@ -110,7 +110,7 @@ $setupCompileArguments = '/in "{0}" /out "{1}" /base "{2}" /icon "{3}" /compress
 $setupCompile = Start-Process -FilePath $compiler -ArgumentList $setupCompileArguments `
     -PassThru -Wait -WindowStyle Hidden
 if ($setupCompile.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $setupOutput)) {
-    throw 'Failed to compile CodexModelHotkeys-Setup.exe.'
+    throw 'Failed to compile ReasonKey-Setup.exe.'
 }
 
 $setupValidation = Start-Process -FilePath $setupOutput -ArgumentList '--validate' `
@@ -128,7 +128,7 @@ if ($uninstallerValidation.ExitCode -ne 0) {
 
 $hash = (Get-FileHash -LiteralPath $setupOutput -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -LiteralPath ($setupOutput + '.sha256') `
-    -Value "$hash  CodexModelHotkeys-Setup.exe" -Encoding ascii
+    -Value "$hash  ReasonKey-Setup.exe" -Encoding ascii
 
 Write-Host "Built: $runtimeOutput"
 Write-Host "Built: $setupOutput"

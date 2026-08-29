@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- Rename the product, executable, installer, MSIX application, data directory,
+  logs, and release artifacts from Codex Model Hotkeys to ReasonKey under the
+  Rotorlash Labs publisher name. Preserve existing `presets.ini` during the
+  direct-installer and Store migration.
+- Support both Chat picker layouts, including its `Select ChatGPT model`
+  trigger, `5.6 Sol` model row, compact Power slider, Advanced rows, and
+  Instant/Medium/High/Extra High/Pro effort names. Default Chat hotkeys use an
+  independent Instant/Medium/High/Pro sequence while Codex presets stay intact.
+- Add a reproducible x64 MSIX build with generated manifest assets, package and
+  runtime hashes, local development signing, packaged-runtime validation, and a
+  Windows App Certification Kit wrapper.
+- Store writable configuration and logs in package `LocalState`, preserve an
+  existing direct-install configuration on first Store launch, and register an
+  optional startup task disabled by default.
+- Add a first-run quick-start window, privacy policy, Store listing copy,
+  certification notes, identity template, submission checklist, and CI MSIX
+  artifact.
+
 ## 1.0.3 - 2026-08-28
 
 - Replace the default AutoHotkey tray icon with the custom black key and

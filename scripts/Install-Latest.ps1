@@ -5,22 +5,22 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$localSetup = Join-Path $repositoryRoot 'dist\CodexModelHotkeys-Setup.exe'
+$localSetup = Join-Path $repositoryRoot 'dist\ReasonKey-Setup.exe'
 
 if (Test-Path -LiteralPath $localSetup) {
     $setupPath = $localSetup
     $temporaryDirectory = $null
 }
 else {
-    $temporaryDirectory = Join-Path $env:TEMP ('CodexModelHotkeys-' + [guid]::NewGuid().ToString('N'))
+    $temporaryDirectory = Join-Path $env:TEMP ('ReasonKey-' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $temporaryDirectory | Out-Null
-    $setupPath = Join-Path $temporaryDirectory 'CodexModelHotkeys-Setup.exe'
-    $checksumPath = Join-Path $temporaryDirectory 'CodexModelHotkeys-Setup.exe.sha256'
+    $setupPath = Join-Path $temporaryDirectory 'ReasonKey-Setup.exe'
+    $checksumPath = Join-Path $temporaryDirectory 'ReasonKey-Setup.exe.sha256'
     $releaseBase = 'https://github.com/nauroman/codex-model-hotkeys/releases/latest/download'
 
-    Write-Host 'Downloading the latest Codex Model Hotkeys installer...'
-    Invoke-WebRequest -UseBasicParsing -Uri "$releaseBase/CodexModelHotkeys-Setup.exe" -OutFile $setupPath
-    Invoke-WebRequest -UseBasicParsing -Uri "$releaseBase/CodexModelHotkeys-Setup.exe.sha256" -OutFile $checksumPath
+    Write-Host 'Downloading the latest ReasonKey installer...'
+    Invoke-WebRequest -UseBasicParsing -Uri "$releaseBase/ReasonKey-Setup.exe" -OutFile $setupPath
+    Invoke-WebRequest -UseBasicParsing -Uri "$releaseBase/ReasonKey-Setup.exe.sha256" -OutFile $checksumPath
 
     $expectedHash = ((Get-Content -LiteralPath $checksumPath -Raw).Trim() -split '\s+')[0]
     $actualHash = (Get-FileHash -LiteralPath $setupPath -Algorithm SHA256).Hash
