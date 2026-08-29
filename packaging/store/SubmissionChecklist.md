@@ -29,20 +29,30 @@
 
 ## Store submission
 
-- [ ] Set the product to free unless monetization is intentionally added.
-- [ ] Select PC/Desktop and x64 only.
-- [ ] Complete the age-rating questionnaire.
-- [ ] Declare and justify the `runFullTrust` restricted capability.
-- [ ] Paste the English listing text from `StoreListing.en-US.md`.
-- [ ] Upload `dist/store-assets/StoreLogo300x300.png`.
-- [ ] Upload `packaging/store/assets/StoreScreenshot-ReasonKey-QuickStart.png` and any
+- [x] Set the product to free unless monetization is intentionally added.
+- [x] Select PC/Desktop and x64 only.
+- [x] Complete the age-rating questionnaire.
+- [x] Declare and justify the `runFullTrust` restricted capability.
+- [x] Paste the English listing text from `StoreListing.en-US.md`.
+- [x] Upload `dist/store-assets/StoreLogo300x300.png`.
+- [x] Upload `packaging/store/assets/StoreScreenshot-ReasonKey-QuickStart.png` and any
       additional 1366x768-or-larger PNG screenshots.
-- [ ] Use the public `PRIVACY.md` URL.
-- [ ] Use the GitHub repository as website and support URL.
-- [ ] Paste `CertificationNotes.md` into the certification notes field.
-- [ ] State clearly that the utility is unofficial and requires the
+- [x] Use the public `PRIVACY.md` URL.
+- [x] Use the GitHub repository as website and support URL.
+- [x] Paste `CertificationNotes.md` into the certification notes field.
+- [x] State clearly that the utility is unofficial and requires the
       Codex/ChatGPT Windows desktop app.
-- [ ] Upload the non-`_Dev` MSIX and wait for package validation.
+- [x] Upload the non-`_Dev` MSIX and wait for package validation.
+
+## Submission evidence
+
+- Submitted to Microsoft Store certification on 2026-08-29.
+- Partner Center product ID: `9NLDRHX8Z0B1`.
+- Submission ID: `1152921505701768947`.
+- Submitted package: `ReasonKey_1.0.3.0_x64.msix`.
+- Submitted package SHA-256:
+  `005F62326F934BEC2CF4D1B04971024A6ECB88DF153116E14BCFEFA046F9BE9D`.
+- Partner Center status after submission: `In certification`.
 
 ## After certification
 
