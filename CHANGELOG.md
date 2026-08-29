@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.0.3 - 2026-08-28
 
 - Replace the default AutoHotkey tray icon with the custom black key and
   green-and-white effort chevrons in the runtime, installer, shortcuts, and
   Windows app listing.
+- Remove both canonical and Codex package-redirected per-user files during
+  uninstall while retaining strict path validation.
 
 ## 1.0.2 - 2026-08-28
 

@@ -3,7 +3,7 @@
 #NoTrayIcon
 
 global AppName := "Codex Model Hotkeys"
-global AppVersion := "1.0.2"
+global AppVersion := "1.0.3"
 global InstallDirectory := EnvGet("LOCALAPPDATA") "\CodexModelHotkeys"
 global RuntimePath := InstallDirectory "\CodexModelHotkeys.exe"
 global ConfigPath := InstallDirectory "\presets.ini"

@@ -20,7 +20,26 @@ $packagesPrefix = ([IO.Path]::GetFullPath(
     (Join-Path $env:LOCALAPPDATA 'Packages')
 ).TrimEnd([IO.Path]::DirectorySeparatorChar)) + [IO.Path]::DirectorySeparatorChar
 $codexPackagesPrefix = $packagesPrefix + 'OpenAI.Codex_'
+$redirectedInstallSuffix = '\LocalCache\Local\CodexModelHotkeys'
 $redirectedRuntimeSuffix = '\LocalCache\Local\CodexModelHotkeys\CodexModelHotkeys.exe'
+
+function Test-IsExpectedInstallDirectory {
+    param([string]$DirectoryPath)
+
+    if ([string]::IsNullOrWhiteSpace($DirectoryPath)) {
+        return $false
+    }
+
+    $candidate = [IO.Path]::GetFullPath($DirectoryPath).TrimEnd(
+        [IO.Path]::DirectorySeparatorChar
+    )
+    if ($candidate.Equals($expectedInstallDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+        return $true
+    }
+
+    return $candidate.StartsWith($codexPackagesPrefix, [StringComparison]::OrdinalIgnoreCase) -and
+        $candidate.EndsWith($redirectedInstallSuffix, [StringComparison]::OrdinalIgnoreCase)
+}
 
 function Test-IsInstalledRuntimePath {
     param([string]$ProcessPath)
@@ -55,6 +74,22 @@ if ($Validate) {
     if (Test-IsInstalledRuntimePath $unrelatedPackageSample) {
         throw 'Runtime path validation accepted another package path.'
     }
+    $redirectedInstallSample = Join-Path $packagesPrefix `
+        'OpenAI.Codex_Test\LocalCache\Local\CodexModelHotkeys'
+    if (-not (Test-IsExpectedInstallDirectory $expectedInstallDirectory)) {
+        throw 'Install directory validation rejected the canonical path.'
+    }
+    if (-not (Test-IsExpectedInstallDirectory $redirectedInstallSample)) {
+        throw 'Install directory validation rejected the package-redirected path.'
+    }
+    if (Test-IsExpectedInstallDirectory (Join-Path $env:LOCALAPPDATA 'Other\CodexModelHotkeys')) {
+        throw 'Install directory validation accepted an unrelated path.'
+    }
+    $unrelatedInstallSample = Join-Path $packagesPrefix `
+        'Other.Package_Test\LocalCache\Local\CodexModelHotkeys'
+    if (Test-IsExpectedInstallDirectory $unrelatedInstallSample) {
+        throw 'Install directory validation accepted another package path.'
+    }
     exit 0
 }
 
@@ -85,8 +120,28 @@ Get-CimInstance Win32_Process -Filter "Name = 'CodexModelHotkeys.exe'" -ErrorAct
         Wait-Process -Id $_.ProcessId -Timeout 3 -ErrorAction SilentlyContinue
     }
 
-if (Test-Path -LiteralPath $expectedInstallDirectory) {
-    Remove-Item -LiteralPath $expectedInstallDirectory -Recurse -Force
+$installDirectoriesToRemove = @()
+$packagesDirectory = $packagesPrefix.TrimEnd([IO.Path]::DirectorySeparatorChar)
+if (Test-Path -LiteralPath $packagesDirectory) {
+    foreach ($packageDirectory in Get-ChildItem -LiteralPath $packagesDirectory `
+            -Directory -Filter 'OpenAI.Codex_*' -ErrorAction SilentlyContinue) {
+        $candidate = Join-Path $packageDirectory.FullName `
+            'LocalCache\Local\CodexModelHotkeys'
+        if ((Test-Path -LiteralPath $candidate) -and
+            (Test-IsExpectedInstallDirectory $candidate)) {
+            $installDirectoriesToRemove += [IO.Path]::GetFullPath($candidate)
+        }
+    }
+}
+$installDirectoriesToRemove += $expectedInstallDirectory
+
+foreach ($installDirectory in $installDirectoriesToRemove | Select-Object -Unique) {
+    if (-not (Test-IsExpectedInstallDirectory $installDirectory)) {
+        throw "Refusing to remove an unexpected installation directory: $installDirectory"
+    }
+    if (Test-Path -LiteralPath $installDirectory) {
+        Remove-Item -LiteralPath $installDirectory -Recurse -Force
+    }
 }
 if (Test-Path -LiteralPath $startupShortcut) {
     Remove-Item -LiteralPath $startupShortcut -Force
