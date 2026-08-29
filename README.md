@@ -41,9 +41,10 @@ Right-click the **Codex Model Hotkeys** tray icon and choose
 **Open presets.ini**. Change any hotkey, model, or effort, save, then choose
 **Reload** from the tray menu.
 
-The tray icon is the green **H** in the Windows notification area near the
-clock. If it is hidden, click the **^** arrow to show hidden icons. Hover over
-the icon to confirm that its tooltip starts with **Codex Model Hotkeys**.
+The tray icon is the black key with green-and-white chevrons in the Windows
+notification area near the clock. If it is hidden, click the **^** arrow to
+show hidden icons. Hover over it to confirm that its tooltip starts with
+**Codex Model Hotkeys**.
 
 The installed `presets.ini` contains a beginner-oriented explanation of every
 setting and the supported hotkey syntax. **Open configuration guide** opens an

@@ -38,6 +38,7 @@ DirCreate(DataDirectory)
 OnError(LogUnhandledError)
 
 RegisterConfiguredHotkeys()
+SetApplicationIcon()
 BuildTrayMenu()
 LogMessage("script-start version=" AppVersion " pid=" DllCall("GetCurrentProcessId"))
 
@@ -135,6 +136,16 @@ RegisterConfiguredHotkeys()
             LogMessage("invalid-hotkey=" preset.Hotkey " error=" err.Message)
     }
     HotIf()
+}
+
+SetApplicationIcon()
+{
+    iconPath := A_IsCompiled
+        ? A_ScriptFullPath
+        : A_ScriptDir "\..\assets\CodexModelHotkeys.ico"
+
+    if FileExist(iconPath)
+        TraySetIcon(iconPath)
 }
 
 BuildTrayMenu()

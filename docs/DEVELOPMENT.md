@@ -7,6 +7,7 @@ src/CodexModelHotkeys.ahk       Runtime and UI Automation state machine
 config/default-presets.ini      Default user configuration
 installer/Setup.ahk             Per-user graphical installer source
 installer/Uninstall.ps1         Installed uninstaller
+assets/CodexModelHotkeys.ico    Multi-resolution application icon
 scripts/Build.ps1               Reproducible local/CI build
 scripts/Install-Latest.ps1      Checksum-verifying release downloader
 vendor/UIA-v2/                  Pinned third-party UIA library

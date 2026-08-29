@@ -85,9 +85,14 @@ $runtimeSource = Join-Path $repositoryRoot 'src\CodexModelHotkeys.ahk'
 $runtimeOutput = Join-Path $distDirectory 'CodexModelHotkeys.exe'
 $setupSource = Join-Path $repositoryRoot 'installer\Setup.ahk'
 $setupOutput = Join-Path $distDirectory 'CodexModelHotkeys-Setup.exe'
+$iconPath = Join-Path $repositoryRoot 'assets\CodexModelHotkeys.ico'
 
-$runtimeCompileArguments = '/in "{0}" /out "{1}" /base "{2}" /compress 0 /silent verbose' -f `
-    $runtimeSource, $runtimeOutput, $baseExecutable
+if (-not (Test-Path -LiteralPath $iconPath)) {
+    throw "Application icon not found: $iconPath"
+}
+
+$runtimeCompileArguments = '/in "{0}" /out "{1}" /base "{2}" /icon "{3}" /compress 0 /silent verbose' -f `
+    $runtimeSource, $runtimeOutput, $baseExecutable, $iconPath
 $runtimeCompile = Start-Process -FilePath $compiler -ArgumentList $runtimeCompileArguments `
     -PassThru -Wait -WindowStyle Hidden
 if ($runtimeCompile.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $runtimeOutput)) {
@@ -100,8 +105,8 @@ if ($runtimeValidation.ExitCode -ne 0) {
     throw 'The compiled runtime failed validation.'
 }
 
-$setupCompileArguments = '/in "{0}" /out "{1}" /base "{2}" /compress 0 /silent verbose' -f `
-    $setupSource, $setupOutput, $baseExecutable
+$setupCompileArguments = '/in "{0}" /out "{1}" /base "{2}" /icon "{3}" /compress 0 /silent verbose' -f `
+    $setupSource, $setupOutput, $baseExecutable, $iconPath
 $setupCompile = Start-Process -FilePath $compiler -ArgumentList $setupCompileArguments `
     -PassThru -Wait -WindowStyle Hidden
 if ($setupCompile.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $setupOutput)) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Replace the default AutoHotkey tray icon with the custom black key and
+  green-and-white effort chevrons in the runtime, installer, shortcuts, and
+  Windows app listing.
+
 ## 1.0.2 - 2026-08-28
 
 - Replace the terse installer success message with a beginner-friendly guide
