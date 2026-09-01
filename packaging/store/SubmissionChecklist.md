@@ -14,7 +14,7 @@
 
 - [x] Update runtime and installer `AppVersion` values together.
 - [x] Run `scripts/Build.ps1 -Clean`.
-- [ ] Run the real compact and Advanced picker regression matrix.
+- [x] Run the real compact and Advanced picker regression matrix.
 - [x] Build with `scripts/Build-Msix.ps1 -Clean -Store -IdentityFile ...`.
 - [x] Confirm the build metadata says `Microsoft Store submission` and
       `signed: false`.
@@ -60,6 +60,8 @@
 
 - Partner Center update submission ID: `1152921505701787888` (Submission 2,
   created as a draft on 2026-09-01).
+- The user confirmed the real Codex and ChatGPT compact/Advanced picker
+  regression matrix on 2026-09-01 before release.
 - Clean direct build completed with `scripts/Build.ps1 -Clean`.
 - Direct installer SHA-256:
   `264927ED38022176AB234B881F6F3F9A78A62E75901867F31EF70481E45F3B32`.
