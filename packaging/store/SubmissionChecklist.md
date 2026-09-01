@@ -43,6 +43,7 @@
 - [x] State clearly that the utility is unofficial and requires the
       Codex/ChatGPT Windows desktop app.
 - [x] Upload the non-`_Dev` MSIX and wait for package validation.
+- [x] Submit the update and confirm Partner Center reports `In certification`.
 
 ## Submission evidence
 
@@ -56,10 +57,12 @@
 - Partner Center showed version 1.0.3 as `In the Microsoft Store` on
   2026-09-01 before the 1.0.4 update was started.
 
-## Version 1.0.4 update preparation
+## Version 1.0.4 update evidence
 
 - Partner Center update submission ID: `1152921505701787888` (Submission 2,
-  created as a draft on 2026-09-01).
+  submitted to certification on 2026-09-01).
+- Partner Center status after submission: `In certification`, with Submission
+  complete and Pre-processing active (step 2 of 4).
 - The user confirmed the real Codex and ChatGPT compact/Advanced picker
   regression matrix on 2026-09-01 before release.
 - Clean direct build completed with `scripts/Build.ps1 -Clean`.
@@ -80,6 +83,9 @@
   active ReasonKey process.
 - Updated `StoreScreenshot-ReasonKey-QuickStart.png` is a verified 1369x799 PNG
   showing the current Codex and ChatGPT Quick Start content.
+- The older Store screenshot was removed before submission. The remaining
+  screenshot matched the repository file SHA-256
+  `2169550DFE049839D15581502149EB7C14EABE978EDEA488A93998244B22DAF2`.
 - Elevated development-MSIX installation and packaged `LocalState` validation
   passed with exit code `0`. With direct first, MSIX exited; with MSIX first,
   direct exited. Each order left exactly one runtime and only the winning
