@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.0.4 - 2026-09-01
+
+- Prevent the Microsoft Store, direct-installer, package-redirected, and legacy
+  runtime paths from running more than one ReasonKey instance in the same
+  Windows session by using one shared named mutex. The new runtime also stops
+  an already-running 1.0.3 process from either channel during the upgrade.
+- Use the runtime's current Quick Start window after a direct installation as
+  well as on the first Store launch, removing the duplicated installer guide
+  that still described the pre-ChatGPT product.
+- Add compiled cross-path singleton validation that launches two copies from
+  different directories and requires the second copy to exit.
 
 - Rename the product, executable, installer, MSIX application, data directory,
   logs, and release artifacts from Codex Model Hotkeys to ReasonKey under the

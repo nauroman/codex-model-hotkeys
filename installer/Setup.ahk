@@ -3,7 +3,7 @@
 #NoTrayIcon
 
 global AppName := "ReasonKey"
-global AppVersion := "1.0.3"
+global AppVersion := "1.0.4"
 global InstallDirectory := EnvGet("LOCALAPPDATA") "\ReasonKey"
 global RuntimePath := InstallDirectory "\ReasonKey.exe"
 global ConfigPath := InstallDirectory "\presets.ini"
@@ -34,6 +34,21 @@ if InStr(DllCall("GetCommandLine", "Str"), " --validate")
         . "\ReasonKey\ReasonKey.exe"
     if IsInstalledRuntimePath(unrelatedPackagePath)
         ExitApp(15)
+    storeRuntimePath := EnvGet("ProgramFiles")
+        . "\WindowsApps\RotorlashLabs.ReasonKey_1.0.4.0_x64__test"
+        . "\ReasonKey.exe"
+    if !IsInstalledRuntimePath(storeRuntimePath)
+        ExitApp(16)
+    developmentStoreRuntimePath := EnvGet("ProgramFiles")
+        . "\WindowsApps\RotorlashLabs.ReasonKey.Dev_1.0.4.0_x64__test"
+        . "\ReasonKey.exe"
+    if !IsInstalledRuntimePath(developmentStoreRuntimePath)
+        ExitApp(17)
+    unrelatedStoreRuntimePath := EnvGet("ProgramFiles")
+        . "\WindowsApps\RotorlashLabs.ReasonKey.Tools_1.0.4.0_x64__test"
+        . "\ReasonKey.exe"
+    if IsInstalledRuntimePath(unrelatedStoreRuntimePath)
+        ExitApp(18)
     ExitApp(0)
 }
 
@@ -117,67 +132,23 @@ InstallApplication()
     RegWrite(1, "REG_DWORD", uninstallKey, "NoModify")
     RegWrite(1, "REG_DWORD", uninstallKey, "NoRepair")
     RegWrite(2500, "REG_DWORD", uninstallKey, "EstimatedSize")
-    try RegDelete(legacyUninstallKey)
+    try RegDeleteKey(legacyUninstallKey)
 
     ; The new installation and migrated configuration are now durable. Remove
     ; the obsolete product directory so Installed Apps exposes one product.
     if FileExist(ConfigPath)
         RemoveLegacyInstallationDirectory()
 
-    Run('"' RuntimePath '"', InstallDirectory)
+    runtimeCommand := '"' RuntimePath '"'
+    if !SilentInstall
+        runtimeCommand .= " --show-quick-start"
+    Run(runtimeCommand, InstallDirectory)
     try FileAppend(
         FormatTime(, "yyyy-MM-dd HH:mm:ss") " install-complete path=" InstallDirectory "`n",
         SetupLogPath,
         "UTF-8"
     )
-    if !SilentInstall
-        ShowInstallationGuide()
     ExitApp(0)
-}
-
-ShowInstallationGuide()
-{
-    global AppName, AppVersion
-
-    guideGui := Gui("+OwnDialogs", AppName " " AppVersion)
-    guideGui.MarginX := 24
-    guideGui.MarginY := 20
-
-    guideGui.SetFont("s14 Bold", "Segoe UI")
-    guideGui.AddText("w680", "Installation completed successfully")
-
-    guideGui.SetFont("s9 Norm", "Segoe UI")
-    guideGui.AddText("y+8 w680", "ReasonKey is now running in the background and will start automatically when you sign in to Windows.")
-
-    guideGui.SetFont("s10 Bold", "Segoe UI")
-    guideGui.AddText("y+14 w680", "Default shortcuts")
-    guideGui.SetFont("s9 Norm", "Segoe UI")
-    guideGui.AddText("y+4 w680", "F16  -  Luna High        F17  -  Sol Light        F18  -  Sol Extra High        F19  -  Sol Max")
-    guideGui.AddText("y+3 w680", "If your keyboard does not have F16-F19 keys, use the customization steps below to assign combinations such as Ctrl+Alt+1 through Ctrl+Alt+4.")
-
-    guideGui.SetFont("s10 Bold", "Segoe UI")
-    guideGui.AddText("y+14 w680", "How to use it")
-    guideGui.SetFont("s9 Norm", "Segoe UI")
-    guideGui.AddText("y+4 w680", "1. Open or activate the Codex/ChatGPT desktop app and use either a Codex or ChatGPT Chat composer.`n2. Press one of the shortcuts above.`n3. ReasonKey selects the configured model and effort for that composer. A small status message confirms the result.")
-
-    guideGui.SetFont("s10 Bold", "Segoe UI")
-    guideGui.AddText("y+14 w680", "Where to find the tray icon")
-    guideGui.SetFont("s9 Norm", "Segoe UI")
-    guideGui.AddText("y+4 w680", "1. Look in the Windows notification area at the bottom-right of the screen, near the clock.`n2. If the icon is hidden, click the ^ arrow to show hidden icons.`n3. Find the black key icon with green-and-white chevrons. Hover over it to see '" AppName " " AppVersion "'.`n4. Right-click that icon to open the utility menu. It contains the presets, configuration files, log, Reload, and Exit.")
-
-    guideGui.SetFont("s10 Bold", "Segoe UI")
-    guideGui.AddText("y+14 w680", "How to customize shortcuts, models, or effort")
-    guideGui.SetFont("s9 Norm", "Segoe UI")
-    guideGui.AddText("y+4 w680", "1. Right-click the black key tray icon and choose Open presets.ini.`n2. Follow the detailed instructions at the top of the file, then save it with Ctrl+S.`n3. Right-click the key icon again and choose Reload to apply your changes.`n4. Open configuration guide shows an always-current commented example. Upgrades never overwrite your active presets.ini.`n5. If something does not work, choose Open log from the same tray menu.")
-
-    guideGui.SetFont("s9 Norm", "Segoe UI")
-    finishButton := guideGui.AddButton("y+18 w110 h30 Default", "Finish")
-
-    finishButton.OnEvent("Click", (*) => guideGui.Destroy())
-    guideGui.OnEvent("Close", (*) => guideGui.Destroy())
-
-    guideGui.Show("AutoSize Center")
-    WinWaitClose("ahk_id " guideGui.Hwnd)
 }
 
 StopInstalledRuntime()
@@ -220,14 +191,23 @@ IsInstalledRuntimePath(processPath)
         "\localcache\local\reasonkey\reasonkey.exe",
         "\localcache\local\codexmodelhotkeys\codexmodelhotkeys.exe"
     ]
-    if InStr(candidate, codexPackagesPrefix) != 1
-        return false
-    for redirectedSuffix in redirectedSuffixes
+    if InStr(candidate, codexPackagesPrefix) = 1
     {
-        if RegExMatch(candidate, "\Q" redirectedSuffix "\E$")
-            return true
+        for redirectedSuffix in redirectedSuffixes
+        {
+            if RegExMatch(candidate, "\Q" redirectedSuffix "\E$")
+                return true
+        }
     }
-    return false
+
+    windowsAppsPrefix := StrLower(EnvGet("ProgramFiles") "\WindowsApps\")
+    if InStr(candidate, windowsAppsPrefix) != 1
+        return false
+    packageRelativePath := SubStr(candidate, StrLen(windowsAppsPrefix) + 1)
+    return RegExMatch(
+        packageRelativePath,
+        "^rotorlashlabs\.reasonkey(?:\.dev)?_[^\\]+\\reasonkey\.exe$"
+    )
 }
 
 MigrateLegacyConfiguration()

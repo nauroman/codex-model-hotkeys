@@ -80,8 +80,9 @@ Copyright 2026 ReasonKey contributors. Codex and OpenAI are the
 property of their respective owners. This product is not affiliated with or
 endorsed by OpenAI.
 
-## What's new in 1.0.3
+## What's new in 1.0.4
 
-- Microsoft Store MSIX packaging with Store-managed installation and updates.
-- Package-owned local configuration and clean uninstall.
-- First-run quick-start guide and optional Windows Startup Apps integration.
+- Prevent the Store and direct-installer versions from running two ReasonKey
+  instances in the same Windows session.
+- Use the same current Quick Start content for both installation channels.
+- Replace and migrate the older Codex Model Hotkeys 1.0.3 runtime.

@@ -20,8 +20,8 @@ Because the executable is currently unsigned, Windows SmartScreen may show a
 warning. Use **More info → Run anyway** only if the publisher URL and checksum
 match this repository. Every release includes a SHA-256 checksum.
 
-Microsoft Store packaging is also maintained in this repository. The public
-Store link will be added after Partner Center certification. See
+ReasonKey is also available from the
+[**Microsoft Store**](https://apps.microsoft.com/detail/9NLDRHX8Z0B1). See
 [MSIX packaging](packaging/msix/README.md) for the reproducible package build,
 local test, identity, and submission process.
 
@@ -211,6 +211,14 @@ The Microsoft Store package uses its per-user package `LocalState` directory;
 the tray command opens the correct log for the installed channel.
 
 See [Troubleshooting](docs/TROUBLESHOOTING.md) before opening an issue.
+
+## One runtime across Store and direct installs
+
+The Store package and direct installer use the same per-session singleton. If
+both channels are installed, whichever current ReasonKey runtime starts first
+remains active and a second launch exits without registering another set of
+hotkeys or showing another Quick Start window. Version 1.0.4 also migrates and
+stops the older `CodexModelHotkeys.exe` runtime from release 1.0.3.
 
 ## Uninstall
 

@@ -19,6 +19,13 @@ The manifest declares a supported `windows.startupTask` extension, but it is
 disabled by default. The user can opt in through the **Open Startup Apps
 settings** tray command or quick-start button.
 
+ReasonKey uses one per-session Windows named mutex across its Store package,
+direct installer, package-redirected paths, and renamed legacy runtime. A
+second current launch exits before registering hotkeys or creating another tray
+icon. During the 1.0.3-to-1.0.4 migration, the new runtime terminates only exact
+recognized ReasonKey and Codex Model Hotkeys product paths; it does not stop
+unrelated AutoHotkey scripts.
+
 ## Functional dependency
 
 Model switching requires the separately installed Codex/ChatGPT Windows

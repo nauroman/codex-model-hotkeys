@@ -11,6 +11,7 @@ assets/ReasonKey.ico            Multi-resolution application icon
 scripts/Build.ps1               Reproducible local/CI build
 scripts/Build-Msix.ps1          MakeAppx/SignTool MSIX build
 scripts/Test-Msix.ps1           Packaged storage and launch validation
+scripts/Test-SingleInstance.ps1 Cross-path runtime singleton validation
 packaging/msix/                 Manifest, identity template, MSIX guide
 packaging/store/                Store listing and certification materials
 scripts/Invoke-WindowsAppCertification.ps1  WACK validation wrapper
@@ -103,6 +104,12 @@ Test against an actual Codex/ChatGPT desktop window:
    - confirm `presets.ini`, its reference, and the log use package `LocalState`;
    - confirm startup is disabled by default and can be enabled in Startup Apps;
    - uninstall and confirm package-owned data is removed.
+8. Cross-channel singleton:
+   - install or launch the direct and MSIX builds in both orders;
+   - confirm exactly one `ReasonKey.exe` remains active;
+   - confirm the second launch does not show another Quick Start window;
+   - confirm the build-time copied-path probe reports
+     `Cross-path singleton validation passed.`
 
 Do not consider a UI Automation action successful only because it did not
 throw. Verify the corresponding accessible state change.

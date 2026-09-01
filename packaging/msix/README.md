@@ -30,7 +30,7 @@ package-aware storage, and remove the package:
 
 ```powershell
 .\scripts\Test-Msix.ps1 `
-  -PackagePath .\dist\msix\ReasonKey_1.0.3.0_x64_Dev.msix `
+  -PackagePath .\dist\msix\ReasonKey_1.0.4.0_x64_Dev.msix `
   -TrustDevelopmentCertificate
 ```
 
@@ -64,7 +64,7 @@ cleanup together from an elevated PowerShell window:
 
 ```powershell
 .\scripts\Invoke-WindowsAppCertification.ps1 `
-  -PackagePath .\dist\msix\ReasonKey_1.0.3.0_x64_Dev.msix
+  -PackagePath .\dist\msix\ReasonKey_1.0.4.0_x64_Dev.msix
 ```
 
 The report is written below `.build\msix\wack\`.
@@ -88,7 +88,7 @@ The report is written below `.build\msix\wack\`.
    development package or its self-signed certificate.
 
 The version defaults to the runtime `AppVersion` plus a fourth `.0` component.
-For example, runtime version `1.0.3` becomes MSIX version `1.0.3.0`.
+For example, runtime version `1.0.4` becomes MSIX version `1.0.4.0`.
 
 ## Generated outputs
 
@@ -116,6 +116,10 @@ ignored by Git.
 - The startup task is registered through the supported MSIX manifest extension
   and is disabled by default. The quick-start window links to Windows Startup
   Apps so the user can opt in.
+- The Store and direct-installer runtimes acquire the same per-session named
+  mutex. If both channels are installed, only the first current runtime remains
+  active; a second channel launch exits before it creates hotkeys or a tray
+  icon.
 - The Store owns updates and uninstall. The MSIX does not install the project's
   PowerShell uninstaller or write its own Installed Apps registry entry.
 

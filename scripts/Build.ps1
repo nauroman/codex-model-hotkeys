@@ -105,6 +105,17 @@ if ($runtimeValidation.ExitCode -ne 0) {
     throw 'The compiled runtime failed validation.'
 }
 
+$singletonValidation = Start-Process -FilePath 'powershell.exe' `
+    -ArgumentList (
+        '-NoProfile -ExecutionPolicy Bypass -File "{0}" -RuntimePath "{1}"' -f
+        (Join-Path $PSScriptRoot 'Test-SingleInstance.ps1'),
+        $runtimeOutput
+    ) `
+    -WorkingDirectory $repositoryRoot -PassThru -Wait -WindowStyle Hidden
+if ($singletonValidation.ExitCode -ne 0) {
+    throw 'The compiled runtime failed cross-path singleton validation.'
+}
+
 $setupCompileArguments = '/in "{0}" /out "{1}" /base "{2}" /icon "{3}" /compress 0 /silent verbose' -f `
     $setupSource, $setupOutput, $baseExecutable, $iconPath
 $setupCompile = Start-Process -FilePath $compiler -ArgumentList $setupCompileArguments `

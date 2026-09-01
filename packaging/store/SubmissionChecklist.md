@@ -53,12 +53,45 @@
 - Submitted package SHA-256:
   `005F62326F934BEC2CF4D1B04971024A6ECB88DF153116E14BCFEFA046F9BE9D`.
 - Partner Center status after submission: `In certification`.
+- Partner Center showed version 1.0.3 as `In the Microsoft Store` on
+  2026-09-01 before the 1.0.4 update was started.
+
+## Version 1.0.4 update preparation
+
+- Partner Center update submission ID: `1152921505701787888` (Submission 2,
+  created as a draft on 2026-09-01).
+- Clean direct build completed with `scripts/Build.ps1 -Clean`.
+- Direct installer SHA-256:
+  `264927ED38022176AB234B881F6F3F9A78A62E75901867F31EF70481E45F3B32`.
+- Store update package: `ReasonKey_1.0.4.0_x64.msix`.
+- Store update package SHA-256:
+  `86B1C0708A59EAB55B5AFAF877959275A9E7DCB388BFE425F518CF91D0EFFB07`.
+- Build metadata confirms `Microsoft Store submission`, the Partner Center
+  identity, x64 architecture, version `1.0.4.0`, and `signed: false`.
+- Compiled cross-path singleton probe passed from two different executable
+  directories in both launch orders.
+- Reinstall preserved the active `presets.ini` SHA-256 byte-for-byte, removed
+  the legacy startup shortcut and Installed Apps entry, and left the unrelated
+  `arrowkeys.ahk` process running.
+- The current Store 1.0.3.0 runtime was started first, then direct 1.0.4; direct
+  1.0.4 terminated the recognized obsolete Store runtime and left exactly one
+  active ReasonKey process.
+- Updated `StoreScreenshot-ReasonKey-QuickStart.png` is a verified 1369x799 PNG
+  showing the current Codex and ChatGPT Quick Start content.
+- Elevated development-MSIX installation and packaged `LocalState` validation
+  passed with exit code `0`. With direct first, MSIX exited; with MSIX first,
+  direct exited. Each order left exactly one runtime and only the winning
+  channel's Quick Start window.
+- WACK 10.0.26100.8249 completed with overall `WARNING`, not `FAIL`. The report
+  contains the same documented generic AutoHotkey blocked-executable and DPI
+  analyzer warnings as 1.0.3. The dev package and temporary Local Machine
+  Trusted People certificate were removed after validation.
 
 ## After certification
 
 - [ ] Install the public Store build on a clean Windows user profile.
 - [ ] Verify first launch, tray discovery, configuration, optional startup,
       compact/Advanced switching, update behavior, and clean uninstall.
-- [ ] Add the final Microsoft Store URL to the README.
+- [x] Add the final Microsoft Store URL to the README.
 - [ ] Ensure the direct installer and Store package cannot leave two active
       runtime instances on the same Windows session.

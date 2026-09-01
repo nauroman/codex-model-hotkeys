@@ -82,6 +82,20 @@ The Store manifest registers a disabled-by-default startup task. The user can
 enable it through Windows Startup Apps from the first-run guide or tray menu;
 the package does not create its own Startup-folder shortcut.
 
+## One runtime across both installation channels
+
+The direct installer, Microsoft Store package, Codex-package-redirected path,
+and renamed legacy product all represent the same runtime. ReasonKey 1.0.4 and
+later acquire the same per-session Windows named mutex before initializing
+configuration, hotkeys, the tray icon, or Quick Start. A launch from another
+path exits immediately when that mutex already exists.
+
+During the 1.0.3-to-1.0.4 transition, the first new runtime also terminates only
+recognized ReasonKey or `CodexModelHotkeys.exe` product paths. It never stops
+unrelated AutoHotkey scripts. The direct installer uses the runtime's own Quick
+Start window, so Store and EXE installations no longer maintain separate copies
+of the onboarding text.
+
 ## Boundaries
 
 - No Codex or ChatGPT configuration file is modified.

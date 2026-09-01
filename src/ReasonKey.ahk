@@ -48,14 +48,73 @@ if HasCommandLineArgument("--validate")
         ExitApp(1)
     if RegExMatch("5.6 Terra", GetChatModelOptionPattern())
         ExitApp(1)
+
+    if GetRuntimeMutexName() != "Local\RotorlashLabs.ReasonKey.Runtime"
+        ExitApp(52)
+
+    localAppData := EnvGet("LOCALAPPDATA")
+    programFiles := EnvGet("ProgramFiles")
+    productRuntimeSamples := [
+        localAppData "\ReasonKey\ReasonKey.exe",
+        localAppData "\CodexModelHotkeys\CodexModelHotkeys.exe",
+        localAppData "\Packages\OpenAI.Codex_Test\LocalCache\Local"
+            . "\ReasonKey\ReasonKey.exe",
+        localAppData "\Packages\OpenAI.Codex_Test\LocalCache\Local"
+            . "\CodexModelHotkeys\CodexModelHotkeys.exe",
+        programFiles "\WindowsApps\RotorlashLabs.ReasonKey_1.0.4.0_x64__test"
+            . "\ReasonKey.exe",
+        programFiles "\WindowsApps\RotorlashLabs.ReasonKey.Dev_1.0.4.0_x64__test"
+            . "\ReasonKey.exe"
+    ]
+    for productRuntimeSample in productRuntimeSamples
+    {
+        if !IsReasonKeyProductRuntimePath(productRuntimeSample)
+            ExitApp(53)
+    }
+
+    unrelatedRuntimeSamples := [
+        localAppData "\Other\ReasonKey.exe",
+        localAppData "\Packages\Other.Package_Test\LocalCache\Local"
+            . "\ReasonKey\ReasonKey.exe",
+        programFiles "\WindowsApps\RotorlashLabs.ReasonKey.Tools_1.0.4.0_x64__test"
+            . "\ReasonKey.exe"
+    ]
+    for unrelatedRuntimeSample in unrelatedRuntimeSamples
+    {
+        if IsReasonKeyProductRuntimePath(unrelatedRuntimeSample)
+            ExitApp(54)
+    }
     ExitApp(0)
+}
+
+if HasCommandLineArgument("--singleton-probe")
+{
+    probeToken := GetCommandLineArgumentValue("--singleton-probe")
+    if !RegExMatch(probeToken, "^[0-9A-Fa-f]{32}$")
+        ExitApp(71)
+
+    global RuntimeMutexHandle := 0
+    probeMutexName := GetRuntimeMutexName() ".Test." probeToken
+    if !AcquireRuntimeMutex(probeMutexName)
+        ExitApp(73)
+    Sleep(5000)
+    ExitApp(0)
+}
+
+global RuntimeMutexHandle := 0
+global StoppedObsoleteRuntimeCount := 0
+if !HasCommandLineArgument("--validate-package")
+{
+    if !AcquireRuntimeMutex(GetRuntimeMutexName())
+        ExitApp(0)
+    StoppedObsoleteRuntimeCount := StopOtherReasonKeyRuntimes()
 }
 
 UIA.SetMaximumDPIAwareness()
 Persistent true
 
 global AppName := "ReasonKey"
-global AppVersion := "1.0.3"
+global AppVersion := "1.0.4"
 global PackageFamilyName := GetPackageFamilyName()
 global DataDirectory := GetApplicationDataDirectory(PackageFamilyName)
 global ConfigPath := A_IsCompiled
@@ -65,11 +124,11 @@ global GuidePath := A_IsCompiled
     ? DataDirectory "\presets-reference.ini"
     : A_ScriptDir "\..\config\default-presets.ini"
 global LogPath := DataDirectory "\ReasonKey.log"
-global FirstRunMarkerPath := DataDirectory "\store-first-run-complete.txt"
+global QuickStartMarkerPath := DataDirectory "\quick-start-complete.txt"
+global LegacyQuickStartMarkerPath := DataDirectory "\store-first-run-complete.txt"
 
 DirCreate(DataDirectory)
 InitializeConfigurationFiles()
-StopLegacyProductRuntime()
 
 if HasCommandLineArgument("--validate-package")
     ExitApp(ValidatePackagedRuntime())
@@ -85,12 +144,142 @@ LogMessage(
     "script-start version=" AppVersion
     " pid=" DllCall("GetCurrentProcessId")
     " packaged=" (PackageFamilyName != "" ? "true" : "false")
+    " stopped-obsolete=" StoppedObsoleteRuntimeCount
 )
 
 if HasCommandLineArgument("--preview-store-quick-start")
     ShowQuickStart(true, true)
-else if PackageFamilyName != "" && !FileExist(FirstRunMarkerPath)
+else if HasCommandLineArgument("--show-quick-start")
     ShowQuickStart(true)
+else if PackageFamilyName != "" && !HasCompletedQuickStart()
+    ShowQuickStart(true)
+
+GetRuntimeMutexName()
+{
+    return "Local\RotorlashLabs.ReasonKey.Runtime"
+}
+
+AcquireRuntimeMutex(mutexName)
+{
+    global RuntimeMutexHandle
+    static ErrorAlreadyExists := 183
+
+    handle := DllCall(
+        "kernel32\CreateMutexW",
+        "Ptr", 0,
+        "Int", false,
+        "Str", mutexName,
+        "Ptr"
+    )
+    lastError := A_LastError
+    if !handle
+        throw Error(
+            "Could not create the ReasonKey runtime mutex. Windows error "
+            . lastError "."
+        )
+    if lastError = ErrorAlreadyExists
+    {
+        DllCall("kernel32\CloseHandle", "Ptr", handle)
+        return false
+    }
+
+    RuntimeMutexHandle := handle
+    OnExit(ReleaseRuntimeMutex)
+    return true
+}
+
+ReleaseRuntimeMutex(*)
+{
+    global RuntimeMutexHandle
+    if !RuntimeMutexHandle
+        return
+
+    DllCall("kernel32\CloseHandle", "Ptr", RuntimeMutexHandle)
+    RuntimeMutexHandle := 0
+}
+
+IsReasonKeyProductRuntimePath(processPath)
+{
+    if processPath = ""
+        return false
+
+    candidate := StrLower(StrReplace(processPath, "/", "\"))
+    localAppData := StrLower(EnvGet("LOCALAPPDATA"))
+    directRuntimePaths := [
+        localAppData "\reasonkey\reasonkey.exe",
+        localAppData "\codexmodelhotkeys\codexmodelhotkeys.exe"
+    ]
+    for directRuntimePath in directRuntimePaths
+    {
+        if candidate = directRuntimePath
+            return true
+    }
+
+    codexPackagesPrefix := localAppData "\packages\openai.codex_"
+    redirectedRuntimeSuffixes := [
+        "\localcache\local\reasonkey\reasonkey.exe",
+        "\localcache\local\codexmodelhotkeys\codexmodelhotkeys.exe"
+    ]
+    if InStr(candidate, codexPackagesPrefix) = 1
+    {
+        for redirectedRuntimeSuffix in redirectedRuntimeSuffixes
+        {
+            if RegExMatch(candidate, "\Q" redirectedRuntimeSuffix "\E$")
+                return true
+        }
+    }
+
+    windowsAppsPrefix := StrLower(EnvGet("ProgramFiles") "\WindowsApps\")
+    if InStr(candidate, windowsAppsPrefix) != 1
+        return false
+    packageRelativePath := SubStr(candidate, StrLen(windowsAppsPrefix) + 1)
+    return RegExMatch(
+        packageRelativePath,
+        "^rotorlashlabs\.reasonkey(?:\.dev)?_[^\\]+\\reasonkey\.exe$"
+    )
+}
+
+StopOtherReasonKeyRuntimes()
+{
+    if !A_IsCompiled
+        return 0
+
+    stoppedCount := 0
+    currentProcessId := DllCall("GetCurrentProcessId")
+    try
+    {
+        service := ComObjGet("winmgmts:")
+        query := "SELECT ProcessId, ExecutablePath FROM Win32_Process "
+            . "WHERE Name = 'ReasonKey.exe' OR Name = 'CodexModelHotkeys.exe'"
+        for process in service.ExecQuery(query)
+        {
+            if process.ProcessId = currentProcessId
+                continue
+            try candidate := process.ExecutablePath
+            catch
+                candidate := ""
+            if !IsReasonKeyProductRuntimePath(candidate)
+                continue
+
+            processId := process.ProcessId
+            try terminationResult := process.Terminate()
+            catch
+                terminationResult := -1
+            if terminationResult != 0
+                continue
+            stoppedCount += 1
+            try ProcessWaitClose(processId, 3)
+        }
+    }
+    return stoppedCount
+}
+
+HasCompletedQuickStart()
+{
+    global QuickStartMarkerPath, LegacyQuickStartMarkerPath
+    return FileExist(QuickStartMarkerPath)
+        || FileExist(LegacyQuickStartMarkerPath)
+}
 
 GetPackageFamilyName()
 {
@@ -177,40 +366,6 @@ InitializeConfigurationFiles()
 
     ; Refresh the reference guide while preserving the active configuration.
     FileInstall("..\config\default-presets.ini", GuidePath, true)
-}
-
-StopLegacyProductRuntime()
-{
-    if !A_IsCompiled
-        return
-
-    legacyInstallRoot := StrLower(
-        EnvGet("LOCALAPPDATA") "\CodexModelHotkeys\"
-    )
-    packagePrefix := StrLower(EnvGet("LOCALAPPDATA") "\Packages\OpenAI.Codex_")
-    redirectedSuffix := "\localcache\local\codexmodelhotkeys\codexmodelhotkeys.exe"
-
-    try
-    {
-        service := ComObjGet("winmgmts:")
-        query := "SELECT ProcessId, ExecutablePath FROM Win32_Process "
-            . "WHERE Name = 'CodexModelHotkeys.exe'"
-        for process in service.ExecQuery(query)
-        {
-            try candidate := StrLower(StrReplace(process.ExecutablePath, "/", "\"))
-            catch
-                candidate := ""
-            isLegacyInstall := InStr(candidate, legacyInstallRoot) = 1
-            isRedirectedLegacy := InStr(candidate, packagePrefix) = 1
-                && RegExMatch(candidate, "\Q" redirectedSuffix "\E$")
-            if !isLegacyInstall && !isRedirectedLegacy
-                continue
-
-            processId := process.ProcessId
-            process.Terminate()
-            try ProcessWaitClose(processId, 3)
-        }
-    }
 }
 
 ValidatePackagedRuntime()
@@ -361,6 +516,16 @@ HasCommandLineArgument(expected)
     return false
 }
 
+GetCommandLineArgumentValue(expected)
+{
+    for index, argument in A_Args
+    {
+        if argument = expected && index < A_Args.Length
+            return A_Args[index + 1]
+    }
+    return ""
+}
+
 RegisterConfiguredHotkeys()
 {
     global Presets
@@ -412,64 +577,97 @@ OpenQuickStart(*)
 
 ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
 {
-    global AppName, AppVersion, PackageFamilyName, FirstRunMarkerPath
+    global AppName, AppVersion, PackageFamilyName, QuickStartMarkerPath
+
+    isStoreRuntime := PackageFamilyName != "" || previewStoreFeatures
+    contentWidth := previewStoreFeatures ? 1110 : 650
+    contentOptions := "w" contentWidth
+    titleFont := previewStoreFeatures ? "s20 Bold" : "s14 Bold"
+    sectionFont := previewStoreFeatures ? "s14 Bold" : "s10 Bold"
+    bodyFont := previewStoreFeatures ? "s12 Norm" : "s9 Norm"
+    sectionOptions := (previewStoreFeatures ? "y+18 " : "y+14 ") contentOptions
+    bodyOptions := (previewStoreFeatures ? "y+6 " : "y+4 ") contentOptions
 
     guideGui := Gui("+OwnDialogs", AppName " " AppVersion)
-    guideGui.MarginX := previewStoreFeatures ? 358 : 24
-    guideGui.MarginY := previewStoreFeatures ? 90 : 20
+    guideGui.MarginX := previewStoreFeatures ? 128 : 24
+    guideGui.MarginY := previewStoreFeatures ? 96 : 20
 
-    guideGui.SetFont("s14 Bold", "Segoe UI")
-    guideGui.AddText("w650", isFirstRun
+    guideGui.SetFont(titleFont, "Segoe UI")
+    guideGui.AddText(contentOptions, isFirstRun
         ? "ReasonKey is ready"
         : "ReasonKey quick start")
 
-    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.SetFont(bodyFont, "Segoe UI")
     guideGui.AddText(
-        "y+8 w650",
+        "y+8 " contentOptions,
         "The utility is running in the Windows notification area. "
-        . "Its shortcuts are active only while a Codex or ChatGPT composer is active."
+        . "Its shortcuts are active only while a Codex or ChatGPT composer "
+        . "is active."
     )
 
-    guideGui.SetFont("s10 Bold", "Segoe UI")
-    guideGui.AddText("y+14 w650", "Default shortcuts")
-    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.SetFont(sectionFont, "Segoe UI")
+    guideGui.AddText(sectionOptions, "Default Codex shortcuts")
+    guideGui.SetFont(bodyFont, "Segoe UI")
     guideGui.AddText(
-        "y+4 w650",
+        bodyOptions,
         "F16  -  Luna High        F17  -  Sol Light`n"
         . "F18  -  Sol Extra High   F19  -  Sol Max"
     )
 
-    guideGui.SetFont("s10 Bold", "Segoe UI")
-    guideGui.AddText("y+14 w650", "Configuration and tray menu")
-    guideGui.SetFont("s9 Norm", "Segoe UI")
+    guideGui.SetFont(sectionFont, "Segoe UI")
+    guideGui.AddText(sectionOptions, "ChatGPT Chat shortcuts")
+    guideGui.SetFont(bodyFont, "Segoe UI")
     guideGui.AddText(
-        "y+4 w650",
+        bodyOptions,
+        "The same F16-F19 keys select 5.6 Sol with Instant, Medium, High, "
+        . "and Pro effort respectively. Codex and Chat use independent "
+        . "effort settings."
+    )
+
+    guideGui.SetFont(sectionFont, "Segoe UI")
+    guideGui.AddText(sectionOptions, "How to use it")
+    guideGui.SetFont(bodyFont, "Segoe UI")
+    guideGui.AddText(
+        bodyOptions,
+        "Activate a Codex or ChatGPT Chat composer, then press a configured "
+        . "shortcut. ReasonKey selects the model and reasoning effort and "
+        . "shows a small confirmation."
+    )
+
+    guideGui.SetFont(sectionFont, "Segoe UI")
+    guideGui.AddText(sectionOptions, "Configuration and tray menu")
+    guideGui.SetFont(bodyFont, "Segoe UI")
+    guideGui.AddText(
+        bodyOptions,
         "Right-click the black key icon near the Windows clock to edit "
         . "presets.ini, open the log, reload settings, or exit. If the icon "
         . "is hidden, click the ^ arrow in the notification area."
     )
 
-    if PackageFamilyName != "" || previewStoreFeatures
-    {
-        guideGui.SetFont("s10 Bold", "Segoe UI")
-        guideGui.AddText("y+14 w650", "Start automatically after sign-in")
-        guideGui.SetFont("s9 Norm", "Segoe UI")
-        guideGui.AddText(
-            "y+4 w650",
+    guideGui.SetFont(sectionFont, "Segoe UI")
+    guideGui.AddText(sectionOptions, "Start automatically after sign-in")
+    guideGui.SetFont(bodyFont, "Segoe UI")
+    if isStoreRuntime
+        startupDescription :=
             "The Store version leaves startup disabled until you choose it. "
             . "Open Windows Startup Apps and enable ReasonKey if "
             . "you want it to start automatically."
-        )
-        startupButton := guideGui.AddButton(
-            "y+8 w180 h30",
-            "Open Startup Apps"
-        )
-        startupButton.OnEvent("Click", OpenStartupAppsSettings)
-    }
+    else
+        startupDescription :=
+            "The direct installer enables per-user startup automatically. "
+            . "Use Windows Startup Apps if you want to disable or enable it."
+    guideGui.AddText(bodyOptions, startupDescription)
 
-    guideGui.SetFont("s9 Norm", "Segoe UI")
-    presetsButton := guideGui.AddButton("y+16 w150 h30", "Open presets.ini")
-    finishButton := guideGui.AddButton("x+10 w110 h30 Default", "Finish")
+    guideGui.SetFont(bodyFont, "Segoe UI")
+    startupButtonOptions := previewStoreFeatures ? "y+20 w220 h38" : "y+16 w180 h30"
+    presetsButtonOptions := previewStoreFeatures ? "x+12 w190 h38" : "x+10 w150 h30"
+    finishButtonOptions := previewStoreFeatures
+        ? "x+12 w130 h38 Default"
+        : "x+10 w110 h30 Default"
+    startupButton := guideGui.AddButton(startupButtonOptions, "Open Startup Apps")
+    presetsButton := guideGui.AddButton(presetsButtonOptions, "Open presets.ini")
+    finishButton := guideGui.AddButton(finishButtonOptions, "Finish")
+    startupButton.OnEvent("Click", OpenStartupAppsSettings)
     presetsButton.OnEvent("Click", OpenConfiguration)
     finishButton.OnEvent("Click", (*) => guideGui.Destroy())
     guideGui.OnEvent("Close", (*) => guideGui.Destroy())
@@ -477,8 +675,12 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     guideGui.Show(previewStoreFeatures ? "w1366 h768 Center" : "AutoSize Center")
     WinWaitClose("ahk_id " guideGui.Hwnd)
 
-    if isFirstRun && !FileExist(FirstRunMarkerPath)
-        FileAppend("completed=" FormatTime(, "yyyy-MM-dd HH:mm:ss"), FirstRunMarkerPath, "UTF-8")
+    if isFirstRun && !previewStoreFeatures && !FileExist(QuickStartMarkerPath)
+        FileAppend(
+            "completed=" FormatTime(, "yyyy-MM-dd HH:mm:ss"),
+            QuickStartMarkerPath,
+            "UTF-8"
+        )
 }
 
 OpenStartupAppsSettings(*)
