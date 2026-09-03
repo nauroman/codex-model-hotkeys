@@ -80,7 +80,7 @@ https://github.com/nauroman/codex-model-hotkeys
 
 ## Copyright and trademark note
 
-Copyright 2026 ReasonKey contributors. Codex and OpenAI are the
+Copyright 2026 ReasonKey contributors. Codex, ChatGPT, and OpenAI are the
 property of their respective owners. This product is not affiliated with or
 endorsed by OpenAI.
 

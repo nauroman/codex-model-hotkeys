@@ -155,7 +155,13 @@
   asset frames the real compact window on a neutral 1600x900 canvas without
   enlarging the app UI. Screenshot SHA-256:
   `205351780926B4041CD6FBED1D1B515F3E427770CC1A374CC84DA0843AC30A74`.
-- Partner Center upload, submission ID, and certification status are pending.
+- Partner Center accepted `ReasonKey_1.0.6.0_x64.msix` as `Validated` in
+  update Submission 3, ID `1152921505701800820`. The en-US listing uses the
+  single updated 1600x900 Quick Start screenshot; the older 1.0.4 screenshot
+  was removed. The update was submitted on 2026-09-02 (America/Vancouver), and
+  Partner Center verified `Product update: In certification` with Publishing
+  Status `Step 2 of 4` (`Pre-processing`). Publishing is configured to begin
+  automatically after certification passes.
 
 ## After certification
 
