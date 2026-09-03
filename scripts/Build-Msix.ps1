@@ -24,6 +24,7 @@ $manifestTemplatePath = Join-Path $repositoryRoot 'packaging\msix\AppxManifest.x
 $runtimeManifestPath = Join-Path $repositoryRoot 'packaging\msix\ReasonKey.exe.manifest'
 $runtimeSourcePath = Join-Path $repositoryRoot 'src\ReasonKey.ahk'
 $runtimeOutputPath = Join-Path $distDirectory 'ReasonKey.exe'
+$storeUpdaterPath = Join-Path $repositoryRoot '.build\store-updater\ReasonKey.StoreUpdater.exe'
 $sourceImagePath = Join-Path $repositoryRoot 'assets\ReasonKey.png'
 
 function Assert-PathInsideRepository([string]$Path) {
@@ -206,6 +207,12 @@ if (-not (Test-Path -LiteralPath $runtimeOutputPath)) {
     throw "Compiled runtime was not found: $runtimeOutputPath"
 }
 
+& powershell.exe -NoProfile -ExecutionPolicy Bypass `
+    -File (Join-Path $PSScriptRoot 'Build-StoreUpdater.ps1')
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $storeUpdaterPath)) {
+    throw 'The Store updater build failed.'
+}
+
 Assert-PathInsideRepository $buildDirectory
 Assert-PathInsideRepository $msixOutputDirectory
 Assert-PathInsideRepository $storeAssetsDirectory
@@ -225,6 +232,8 @@ New-Item -ItemType Directory -Path $storeAssetsDirectory -Force | Out-Null
 
 Copy-Item -LiteralPath $runtimeOutputPath `
     -Destination (Join-Path $stagingDirectory 'ReasonKey.exe')
+Copy-Item -LiteralPath $storeUpdaterPath `
+    -Destination (Join-Path $stagingDirectory 'ReasonKey.StoreUpdater.exe')
 $packagedRuntimePath = Join-Path $stagingDirectory 'ReasonKey.exe'
 $manifestTool = Get-WindowsSdkTool 'mt.exe'
 & $manifestTool -nologo -manifest $runtimeManifestPath `
@@ -305,6 +314,7 @@ if ($LASTEXITCODE -ne 0) {
 foreach ($requiredPath in @(
     'AppxManifest.xml',
     'ReasonKey.exe',
+    'ReasonKey.StoreUpdater.exe',
     'Assets\Square44x44Logo.png',
     'Assets\Square150x150Logo.png'
 )) {
@@ -330,6 +340,7 @@ $metadata = [ordered]@{
     signatureStatus = $signatureStatus
     sha256 = $packageHash
     runtimeSha256 = (Get-FileHash -LiteralPath $packagedRuntimePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    storeUpdaterSha256 = (Get-FileHash -LiteralPath $storeUpdaterPath -Algorithm SHA256).Hash.ToLowerInvariant()
     sourceRuntimeSha256 = (Get-FileHash -LiteralPath $runtimeOutputPath -Algorithm SHA256).Hash.ToLowerInvariant()
     packagePath = $packagePath
 }

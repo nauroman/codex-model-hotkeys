@@ -49,6 +49,18 @@ if HasCommandLineArgument("--validate")
     if RegExMatch("5.6 Terra", GetChatModelOptionPattern())
         ExitApp(1)
 
+    modernChatPowerEfforts := ["Light", "Medium", "High", "Max"]
+    for index, expectedPowerEffort in modernChatPowerEfforts
+    {
+        if GetModernChatPowerEffort(expectedChatEfforts[index])
+            != expectedPowerEffort
+            ExitApp(1)
+        if GetModernPowerIndex(expectedPowerEffort) = 0
+            ExitApp(1)
+    }
+    if GetModernChatPowerEffort("Extra High") != ""
+        ExitApp(1)
+
     if GetRuntimeMutexName() != "Local\RotorlashLabs.ReasonKey.Runtime"
         ExitApp(52)
 
@@ -61,9 +73,9 @@ if HasCommandLineArgument("--validate")
             . "\ReasonKey\ReasonKey.exe",
         localAppData "\Packages\OpenAI.Codex_Test\LocalCache\Local"
             . "\CodexModelHotkeys\CodexModelHotkeys.exe",
-        programFiles "\WindowsApps\RotorlashLabs.ReasonKey_1.0.4.0_x64__test"
+        programFiles "\WindowsApps\RotorlashLabs.ReasonKey_1.0.6.0_x64__test"
             . "\ReasonKey.exe",
-        programFiles "\WindowsApps\RotorlashLabs.ReasonKey.Dev_1.0.4.0_x64__test"
+        programFiles "\WindowsApps\RotorlashLabs.ReasonKey.Dev_1.0.6.0_x64__test"
             . "\ReasonKey.exe"
     ]
     for productRuntimeSample in productRuntimeSamples
@@ -76,7 +88,7 @@ if HasCommandLineArgument("--validate")
         localAppData "\Other\ReasonKey.exe",
         localAppData "\Packages\Other.Package_Test\LocalCache\Local"
             . "\ReasonKey\ReasonKey.exe",
-        programFiles "\WindowsApps\RotorlashLabs.ReasonKey.Tools_1.0.4.0_x64__test"
+        programFiles "\WindowsApps\RotorlashLabs.ReasonKey.Tools_1.0.6.0_x64__test"
             . "\ReasonKey.exe"
     ]
     for unrelatedRuntimeSample in unrelatedRuntimeSamples
@@ -114,7 +126,7 @@ UIA.SetMaximumDPIAwareness()
 Persistent true
 
 global AppName := "ReasonKey"
-global AppVersion := "1.0.4"
+global AppVersion := "1.0.6"
 global PackageFamilyName := GetPackageFamilyName()
 global DataDirectory := GetApplicationDataDirectory(PackageFamilyName)
 global ConfigPath := A_IsCompiled
@@ -126,6 +138,8 @@ global GuidePath := A_IsCompiled
 global LogPath := DataDirectory "\ReasonKey.log"
 global QuickStartMarkerPath := DataDirectory "\quick-start-complete.txt"
 global LegacyQuickStartMarkerPath := DataDirectory "\store-first-run-complete.txt"
+global StoreUpdateProcessHandle := 0
+global StoreUpdaterPersistentPath := DataDirectory "\ReasonKey.StoreUpdater.exe"
 
 DirCreate(DataDirectory)
 InitializeConfigurationFiles()
@@ -147,6 +161,9 @@ LogMessage(
     " stopped-obsolete=" StoppedObsoleteRuntimeCount
 )
 
+if IsMicrosoftStoreRuntime(PackageFamilyName)
+    StartStoreUpdateCheck()
+
 if HasCommandLineArgument("--preview-store-quick-start")
     ShowQuickStart(true, true)
 else if HasCommandLineArgument("--show-quick-start")
@@ -157,6 +174,132 @@ else if PackageFamilyName != "" && !HasCompletedQuickStart()
 GetRuntimeMutexName()
 {
     return "Local\RotorlashLabs.ReasonKey.Runtime"
+}
+
+IsMicrosoftStoreRuntime(packageFamilyName)
+{
+    return RegExMatch(
+        packageFamilyName,
+        "^RotorlashLabs\.ReasonKey(?:\.Dev)?_[^\\]+$"
+    )
+}
+
+StartStoreUpdateCheck()
+{
+    global LogPath, StoreUpdateProcessHandle, StoreUpdaterPersistentPath
+    global PackageFamilyName
+
+    updaterPath := A_ScriptDir "\ReasonKey.StoreUpdater.exe"
+    if !FileExist(updaterPath)
+    {
+        LogMessage("store-update helper=missing")
+        return
+    }
+
+    ; Restart only after an update replaces the running package. Crash, hang,
+    ; and reboot restarts remain disabled.
+    restartResult := DllCall(
+        "kernel32\RegisterApplicationRestart",
+        "Str", "--store-update-restart",
+        "UInt", 0xB,
+        "UInt"
+    )
+    if restartResult != 0
+        LogMessage("store-update restart-registration=" restartResult)
+
+    try FileCopy(updaterPath, StoreUpdaterPersistentPath, true)
+    catch as err
+        LogMessage("store-update watcher-copy-error=" err.Message)
+
+    command := Format(
+        '"{1}" --check-store-update --log "{2}"',
+        updaterPath,
+        LogPath
+    )
+    try
+    {
+        Run(command, A_ScriptDir, "Hide", &updaterPid)
+        processHandle := DllCall(
+            "kernel32\OpenProcess",
+            "UInt", 0x101000,
+            "Int", false,
+            "UInt", updaterPid,
+            "Ptr"
+        )
+        if !processHandle
+        {
+            LogMessage("store-update helper-open-error=" A_LastError)
+            return
+        }
+        StoreUpdateProcessHandle := processHandle
+        SetTimer(CheckStoreUpdateProcess, 500)
+    }
+    catch as err
+        LogMessage("store-update helper-start-error=" err.Message)
+}
+
+CheckStoreUpdateProcess()
+{
+    global StoreUpdateProcessHandle, StoreUpdaterPersistentPath
+    global PackageFamilyName, LogPath
+
+    if !StoreUpdateProcessHandle
+    {
+        SetTimer(CheckStoreUpdateProcess, 0)
+        return
+    }
+    if DllCall(
+        "kernel32\WaitForSingleObject",
+        "Ptr", StoreUpdateProcessHandle,
+        "UInt", 0,
+        "UInt"
+    ) != 0
+        return
+
+    exitCode := 0
+    if !DllCall(
+        "kernel32\GetExitCodeProcess",
+        "Ptr", StoreUpdateProcessHandle,
+        "UInt*", &exitCode,
+        "Int"
+    )
+        exitCode := 20
+    DllCall("kernel32\CloseHandle", "Ptr", StoreUpdateProcessHandle)
+    StoreUpdateProcessHandle := 0
+    SetTimer(CheckStoreUpdateProcess, 0)
+
+    if exitCode = 10
+    {
+        if !FileExist(StoreUpdaterPersistentPath)
+        {
+            LogMessage("store-update installed watcher=missing")
+            return
+        }
+
+        watcherCommand := Format(
+            '"{1}" --relaunch-after --parent-pid {2} --aumid "{3}!ReasonKey" --log "{4}"',
+            StoreUpdaterPersistentPath,
+            DllCall("GetCurrentProcessId"),
+            PackageFamilyName,
+            LogPath
+        )
+        try
+        {
+            Run(watcherCommand, , "Hide")
+            LogMessage("store-update installed relaunch=scheduled")
+            ExitApp(0)
+        }
+        catch as err
+            LogMessage("store-update relaunch-error=" err.Message)
+        return
+    }
+
+    if exitCode = 11
+        LogMessage("store-update deferred=silent-not-permitted")
+    else if exitCode = 13
+        LogMessage("store-update deferred=windows")
+    else if exitCode != 0
+        LogMessage("store-update helper-exit=" exitCode)
 }
 
 AcquireRuntimeMutex(mutexName)
@@ -385,6 +528,17 @@ ValidatePackagedRuntime()
     if !FileExist(GuidePath)
         return 24
 
+    updaterPath := A_ScriptDir "\ReasonKey.StoreUpdater.exe"
+    if !FileExist(updaterPath)
+        return 26
+    updaterProbe := RunWait(
+        '"' updaterPath '" --package-probe',
+        A_ScriptDir,
+        "Hide"
+    )
+    if updaterProbe != 0
+        return 27
+
     validationPath := DataDirectory "\package-validation.tmp"
     try
     {
@@ -580,17 +734,20 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     global AppName, AppVersion, PackageFamilyName, QuickStartMarkerPath
 
     isStoreRuntime := PackageFamilyName != "" || previewStoreFeatures
-    contentWidth := previewStoreFeatures ? 1110 : 650
+    ; Store preview changes the copy, not the window geometry. Keep the same
+    ; content-sized dialog that users see in the installed package; screenshot
+    ; dimensions are handled by the capture asset, not by empty GUI space.
+    contentWidth := 650
     contentOptions := "w" contentWidth
-    titleFont := previewStoreFeatures ? "s20 Bold" : "s14 Bold"
-    sectionFont := previewStoreFeatures ? "s14 Bold" : "s10 Bold"
-    bodyFont := previewStoreFeatures ? "s12 Norm" : "s9 Norm"
-    sectionOptions := (previewStoreFeatures ? "y+18 " : "y+14 ") contentOptions
-    bodyOptions := (previewStoreFeatures ? "y+6 " : "y+4 ") contentOptions
+    titleFont := "s14 Bold"
+    sectionFont := "s10 Bold"
+    bodyFont := "s9 Norm"
+    sectionOptions := "y+14 " contentOptions
+    bodyOptions := "y+4 " contentOptions
 
     guideGui := Gui("+OwnDialogs", AppName " " AppVersion)
-    guideGui.MarginX := previewStoreFeatures ? 128 : 24
-    guideGui.MarginY := previewStoreFeatures ? 96 : 20
+    guideGui.MarginX := 24
+    guideGui.MarginY := 20
 
     guideGui.SetFont(titleFont, "Segoe UI")
     guideGui.AddText(contentOptions, isFirstRun
@@ -619,9 +776,9 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     guideGui.SetFont(bodyFont, "Segoe UI")
     guideGui.AddText(
         bodyOptions,
-        "The same F16-F19 keys select 5.6 Sol with Instant, Medium, High, "
-        . "and Pro effort respectively. Codex and Chat use independent "
-        . "effort settings."
+        "The same F16-F19 keys select 5.6 Sol with Light, Medium, High, "
+        . "and Max power respectively. Codex and Chat keep independent "
+        . "selections."
     )
 
     guideGui.SetFont(sectionFont, "Segoe UI")
@@ -659,11 +816,9 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     guideGui.AddText(bodyOptions, startupDescription)
 
     guideGui.SetFont(bodyFont, "Segoe UI")
-    startupButtonOptions := previewStoreFeatures ? "y+20 w220 h38" : "y+16 w180 h30"
-    presetsButtonOptions := previewStoreFeatures ? "x+12 w190 h38" : "x+10 w150 h30"
-    finishButtonOptions := previewStoreFeatures
-        ? "x+12 w130 h38 Default"
-        : "x+10 w110 h30 Default"
+    startupButtonOptions := "y+16 w180 h30"
+    presetsButtonOptions := "x+10 w150 h30"
+    finishButtonOptions := "x+10 w110 h30 Default"
     startupButton := guideGui.AddButton(startupButtonOptions, "Open Startup Apps")
     presetsButton := guideGui.AddButton(presetsButtonOptions, "Open presets.ini")
     finishButton := guideGui.AddButton(finishButtonOptions, "Finish")
@@ -672,7 +827,7 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     finishButton.OnEvent("Click", (*) => guideGui.Destroy())
     guideGui.OnEvent("Close", (*) => guideGui.Destroy())
 
-    guideGui.Show(previewStoreFeatures ? "w1366 h768 Center" : "AutoSize Center")
+    guideGui.Show("AutoSize Center")
     WinWaitClose("ahk_id " guideGui.Hwnd)
 
     if isFirstRun && !previewStoreFeatures && !FileExist(QuickStartMarkerPath)
@@ -814,33 +969,56 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
     windowHandle := WinExist("A")
     windowElement := UIA.ElementFromHandle(windowHandle)
 
-    ; Open the picker through Codex's own accessible trigger. This does not
-    ; depend on the user's current keyboard-shortcut assignment.
-    modelPickerTrigger := FindCodexPickerTrigger(windowElement)
-    pickerKind := "codex"
-
-    if !modelPickerTrigger
+    ; Open the picker through the active composer's accessible trigger. This
+    ; does not depend on the user's current keyboard-shortcut assignment.
+    pickerKind := IsChatComposer(windowElement) ? "chat" : "codex"
+    if pickerKind = "chat"
     {
         modelPickerTrigger := FindChatPickerTrigger(windowElement)
-        pickerKind := "chat"
+        if !modelPickerTrigger
+            modelPickerTrigger := FindCodexPickerTrigger(windowElement)
     }
+    else
+        modelPickerTrigger := FindCodexPickerTrigger(windowElement)
 
-    if !modelPickerTrigger
+    modernTargetModel := pickerKind = "chat" ? "Sol" : targetModel
+    modernTargetEffort := pickerKind = "chat"
+        ? GetModernChatPowerEffort(targetChatEffort)
+        : targetEffort
+    modernTargetLabel := modernTargetEffort = ""
+        ? ""
+        : "5.6 " modernTargetModel " " modernTargetEffort
+
+    LogMessage("picker-kind=" pickerKind)
+    currentLabel := ""
+    if modelPickerTrigger
     {
-        LogMessage("model picker trigger was not found")
-        return false
+        currentLabel := RegExReplace(modelPickerTrigger.Name, " Fast$")
+        LogMessage("model picker trigger=" modelPickerTrigger.Name)
+        if modernTargetLabel != "" && currentLabel = modernTargetLabel
+            return currentLabel
+
+        if !OpenPickerTrigger(modelPickerTrigger)
+        {
+            LogMessage("model picker trigger could not be expanded")
+            return false
+        }
+
+        pickerRoot := GetPickerSearchRoot(windowElement)
     }
-
-    LogMessage("model picker trigger=" modelPickerTrigger.Name)
-
-    try modelPickerTrigger.Click()
-    catch as err
+    else
     {
-        LogMessage("model picker trigger click failed=" err.Message)
-        return false
+        ; The 26.901 picker removes its trigger from the window UIA tree while
+        ; either the compact view or model radio view is already open. The
+        ; focused element still leads to the popup, so accept that state.
+        pickerRoot := GetPickerSearchRoot(windowElement)
+        LogMessage("model picker already open")
     }
 
-    pickerElement := WaitAnyVisibleElement(windowElement, [
+    pickerElement := WaitAnyVisibleElement(pickerRoot, [
+        "^Select model$",
+        "^(?:GPT-)?5\.6 (?:Luna|Terra|Sol)$",
+        "^Power$",
         "^Show advanced options$",
         "^Show compact options$",
         "^Model ",
@@ -849,31 +1027,55 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
 
     if WinExist("A") != windowHandle
     {
-        LogMessage("active window changed while opening model picker")
+        LogMessage("active window changed while using model picker")
         return false
     }
 
     if !pickerElement
     {
-        LogMessage("model picker did not open")
+        LogMessage("model picker was not found")
         try Send("{Escape}")
         return false
     }
 
-    LogMessage("picker-kind=" pickerKind)
+    LogMessage("picker-open current=" currentLabel)
+
+    ; Codex 26.901 moved the picker into a desktop-level accessibility popup.
+    ; Its compact view now exposes Select model (focus + Enter), model radio
+    ; options, and a Power row controlled with Left/Right. Handle that native
+    ; accessible flow before falling back to the older Advanced flyouts.
+    modernModelRow := FindVisibleElement(
+        pickerRoot,
+        "^Select model$",
+        "MenuItem"
+    )
+    modernModelOption := FindVisibleElement(
+        pickerRoot,
+        "^(?:GPT-)?5\.6 " modernTargetModel "$",
+        "RadioButton"
+    )
+    if modernModelRow || modernModelOption
+    {
+        if modernTargetEffort = ""
+        {
+            LogMessage("modern effort mapping was not found=" targetChatEffort)
+            try Send("{Escape}")
+            return false
+        }
+
+        return SelectModernPickerPreset(
+            windowHandle,
+            pickerRoot,
+            modernModelRow,
+            modernModelOption,
+            modernTargetLabel,
+            modernTargetModel,
+            modernTargetEffort
+        )
+    }
+
     if pickerKind = "chat"
         return SelectChatPreset(windowElement, targetChatEffort)
-
-    currentLabel := GetSelectedTriggerLabel(windowElement)
-    LogMessage("picker-open current=" currentLabel)
-    if currentLabel = targetLabel
-    {
-        Send("{Escape}")
-        Sleep(200)
-        return GetSelectedTriggerLabel(windowElement) = targetLabel
-            ? targetLabel
-            : false
-    }
 
     ; The compact Power slider intentionally omits Luna and Sol Max. Use the
     ; app's own Advanced -> Model -> Effort controls for every preset.
@@ -911,7 +1113,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
 
             if reopenedTrigger
             {
-                reopenedTrigger.Click()
+                OpenPickerTrigger(reopenedTrigger)
                 Sleep(450)
                 modelRow := WaitVisibleElement(windowElement, "^Model ", 2500, "MenuItem")
             }
@@ -964,7 +1166,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
         if pickerTrigger
         {
             LogMessage("reopening picker after model selection")
-            pickerTrigger.Click()
+            OpenPickerTrigger(pickerTrigger)
             Sleep(450)
             updatedModelRow := WaitVisibleElement(
                 windowElement,
@@ -1001,7 +1203,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
         if currentTrigger
         {
             LogMessage("reopening picker for effort")
-            currentTrigger.Click()
+            OpenPickerTrigger(currentTrigger)
             Sleep(450)
             effortRow := WaitVisibleElement(windowElement, "^Effort ", 2200, "MenuItem")
         }
@@ -1044,9 +1246,179 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
     Send("{Escape}")
     Sleep(250)
 
-    selectedLabel := WaitSelectedTriggerLabel(windowElement, targetLabel, 3000)
+    freshWindowElement := UIA.ElementFromHandle(windowHandle)
+    selectedLabel := WaitSelectedTriggerLabel(freshWindowElement, targetLabel, 3000)
     LogMessage("advanced-selected=" selectedLabel)
     return selectedLabel = targetLabel ? selectedLabel : false
+}
+
+SelectModernPickerPreset(
+    windowHandle,
+    pickerRoot,
+    modelViewToggle,
+    visibleModelOption,
+    targetLabel,
+    targetModel,
+    targetEffort
+)
+{
+    targetOptionPattern := "^(?:GPT-)?5\.6 " targetModel "$"
+
+    if modelViewToggle
+    {
+        if !SelectMenuOption(modelViewToggle)
+        {
+            LogMessage("modern model view could not be opened")
+            try Send("{Escape}")
+            return false
+        }
+
+        modelSelection := WaitModernModelSelection(
+            targetOptionPattern,
+            2500
+        )
+        if !modelSelection
+        {
+            LogMessage("modern model view did not expose=" targetModel)
+            try Send("{Escape}")
+            return false
+        }
+
+        visibleModelOption := modelSelection[2]
+    }
+
+    if !visibleModelOption || !SelectMenuOption(visibleModelOption)
+    {
+        LogMessage("modern model option was not found=" targetModel)
+        try Send("{Escape}")
+        return false
+    }
+
+    ; Selecting a model returns to the compact view. Its Power row deliberately
+    ; exposes only Left/Right, so clamp to the first stop and advance to the
+    ; requested effort. This is independent of the previous model and effort.
+    Sleep(400)
+    pickerRoot := GetPickerSearchRoot()
+    powerRow := WaitVisibleElement(
+        pickerRoot,
+        "^Power$",
+        2500,
+        "MenuItem"
+    )
+    powerIndex := GetModernPowerIndex(targetEffort)
+    if !powerRow || powerIndex = 0
+    {
+        LogMessage("modern Power row or effort was not found=" targetEffort)
+        try Send("{Escape}")
+        return false
+    }
+
+    try
+    {
+        powerRow.SetFocus()
+        Sleep(100)
+
+        ; Six supported effort levels are the maximum currently exposed. A
+        ; few extra Left presses are harmless and make the start deterministic.
+        loop 8
+        {
+            Send("{Left}")
+            Sleep(120)
+        }
+
+        loop powerIndex - 1
+        {
+            Send("{Right}")
+            Sleep(140)
+        }
+    }
+    catch as err
+    {
+        LogMessage("modern Power selection failed=" err.Message)
+        try Send("{Escape}")
+        return false
+    }
+
+    Sleep(250)
+    Send("{Escape}")
+    Sleep(300)
+
+    freshWindowElement := UIA.ElementFromHandle(windowHandle)
+    selectedLabel := WaitSelectedTriggerLabel(
+        freshWindowElement,
+        targetLabel,
+        3200
+    )
+    LogMessage("modern-selected=" selectedLabel)
+    return selectedLabel = targetLabel ? selectedLabel : false
+}
+
+WaitModernModelSelection(targetOptionPattern, timeout)
+{
+    deadline := A_TickCount + timeout
+
+    loop
+    {
+        try focusedElement := UIA.GetFocusedElement()
+        catch
+            focusedElement := false
+
+        if focusedElement
+        {
+            candidate := focusedElement
+            loop 5
+            {
+                if !candidate
+                    break
+
+                targetOption := FindVisibleElement(
+                    candidate,
+                    targetOptionPattern,
+                    "RadioButton"
+                )
+                if targetOption
+                    return [candidate, targetOption]
+
+                try candidate := candidate.Parent
+                catch
+                    candidate := false
+            }
+        }
+
+        if A_TickCount >= deadline
+            return false
+
+        Sleep(75)
+    }
+}
+
+GetModernPowerIndex(targetEffort)
+{
+    switch targetEffort
+    {
+        case "Light": return 1
+        case "Medium": return 2
+        case "High": return 3
+        case "Extra High": return 4
+        case "Max": return 5
+        case "Ultra": return 6
+        default: return 0
+    }
+}
+
+GetModernChatPowerEffort(targetChatEffort)
+{
+    ; ChatGPT 26.901 adopted Codex's unified Power labels. Preserve existing
+    ; presets.ini semantics while mapping the former Instant/Pro endpoints to
+    ; the equivalent first and fifth Power stops in the current picker.
+    switch targetChatEffort
+    {
+        case "Instant": return "Light"
+        case "Medium": return "Medium"
+        case "High": return "High"
+        case "Pro": return "Max"
+        default: return ""
+    }
 }
 
 SelectChatPreset(windowElement, targetChatEffort)
@@ -1091,7 +1463,7 @@ SelectChatPreset(windowElement, targetChatEffort)
             reopenedTrigger := FindChatPickerTrigger(windowElement)
             if reopenedTrigger
             {
-                reopenedTrigger.Click()
+                OpenPickerTrigger(reopenedTrigger)
                 Sleep(450)
                 modelRow := WaitVisibleElement(
                     windowElement,
@@ -1153,7 +1525,7 @@ SelectChatPreset(windowElement, targetChatEffort)
             if reopenedTrigger
             {
                 LogMessage("reopening Chat picker after model selection")
-                reopenedTrigger.Click()
+                OpenPickerTrigger(reopenedTrigger)
                 Sleep(450)
                 modelRow := WaitVisibleElement(
                     windowElement,
@@ -1180,7 +1552,7 @@ SelectChatPreset(windowElement, targetChatEffort)
         if reopenedTrigger
         {
             LogMessage("reopening Chat picker for effort")
-            reopenedTrigger.Click()
+            OpenPickerTrigger(reopenedTrigger)
             Sleep(450)
             effortRow := WaitVisibleElement(windowElement, "^Effort ", 2200, "MenuItem")
         }
@@ -1246,7 +1618,7 @@ SelectChatPreset(windowElement, targetChatEffort)
         if reopenedTrigger
         {
             LogMessage("reopening Chat picker after effort selection")
-            reopenedTrigger.Click()
+            OpenPickerTrigger(reopenedTrigger)
             Sleep(450)
             updatedEffortRow := WaitVisibleElement(
                 windowElement,
@@ -1323,6 +1695,15 @@ FindCodexPickerTrigger(windowElement)
     )
 }
 
+IsChatComposer(windowElement)
+{
+    return !!FindVisibleElement(
+        windowElement,
+        "^Switch mode, current mode: ChatGPT$",
+        "Button"
+    )
+}
+
 FindChatPickerTrigger(windowElement)
 {
     return FindVisibleElement(
@@ -1330,6 +1711,98 @@ FindChatPickerTrigger(windowElement)
         "^Select ChatGPT model$",
         "Button"
     )
+}
+
+OpenPickerTrigger(trigger)
+{
+    try
+    {
+        if trigger.IsExpandCollapsePatternAvailable
+        {
+            expandPattern := trigger.ExpandCollapsePattern
+            if expandPattern.ExpandCollapseState = 0
+                expandPattern.Expand()
+
+            deadline := A_TickCount + 1200
+            loop
+            {
+                if expandPattern.ExpandCollapseState != 0
+                {
+                    LogMessage("picker-open-method=ExpandCollapse")
+                    return true
+                }
+
+                if A_TickCount >= deadline
+                    break
+
+                Sleep(60)
+            }
+
+            LogMessage("picker ExpandCollapse did not change state")
+        }
+    }
+    catch as err
+    {
+        LogMessage("picker ExpandCollapse failed=" err.Message)
+    }
+
+    ; Older Codex and ChatGPT builds did not expose ExpandCollapse on the
+    ; trigger. Retain their verified generic accessible action as a fallback.
+    try
+    {
+        trigger.Click()
+        LogMessage("picker-open-method=legacy-click")
+        return true
+    }
+    catch as err
+    {
+        LogMessage("picker trigger action failed=" err.Message)
+        return false
+    }
+}
+
+GetPickerSearchRoot(fallbackRoot := false)
+{
+    ; Radix moves the open picker into a desktop-level accessibility popup,
+    ; but it also moves keyboard focus into that popup. Walk only the focused
+    ; element's short ancestor chain first: this avoids a very slow scan of
+    ; every accessible element on the desktop in current Codex builds.
+    deadline := A_TickCount + 1200
+    loop
+    {
+        try candidate := UIA.GetFocusedElement()
+        catch
+            candidate := false
+
+        loop 7
+        {
+            if !candidate
+                break
+
+            try candidateType := candidate.Type
+            catch
+                candidateType := 0
+
+            if candidateType = UIA.Type.Menu
+                return candidate
+
+            try candidate := candidate.Parent
+            catch
+                candidate := false
+        }
+
+        if A_TickCount >= deadline
+            break
+
+        Sleep(60)
+    }
+
+    if fallbackRoot
+        return fallbackRoot
+
+    try return UIA.GetRootElement()
+    catch
+        return false
 }
 
 WaitSelectedChatTriggerValue(windowElement, targetValue, timeout)
@@ -1367,10 +1840,9 @@ WaitSelectedChatTriggerValue(windowElement, targetValue, timeout)
     if !trigger
         return ""
 
-    try trigger.Click()
-    catch as err
+    if !OpenPickerTrigger(trigger)
     {
-        LogMessage("Chat final trigger click failed=" err.Message)
+        LogMessage("Chat final trigger could not be opened")
         return ""
     }
 

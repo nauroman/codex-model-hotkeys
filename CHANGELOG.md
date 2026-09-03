@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.0.6 - 2026-09-02
+
+- Check Microsoft Store for an updated ReasonKey package whenever the active
+  Store runtime starts, using the official `Windows.Services.Store` API.
+- Download and install an available Store update silently when Windows permits
+  it under the user's Microsoft Store auto-update and network settings.
+- Register the packaged runtime with Windows Restart Manager before applying an
+  update, and add a bounded activation fallback so ReasonKey returns to the
+  notification area after a successful package replacement.
+- Keep the direct EXE channel offline: the Store updater is built and packaged
+  only in MSIX, and never runs without the exact public ReasonKey package
+  identity.
+
+## 1.0.5 - 2026-09-02
+
+- Restore compatibility with Codex desktop 26.901's unified model/Power picker
+  by opening the top-level Button through its `ExpandCollapse` pattern and
+  following focus into the desktop-level accessibility popup.
+- Support both the compact view and an already-open model radio view without
+  relying on the picker trigger remaining in the main window UIA tree.
+- Detect ChatGPT from the app's visible mode switch now that Chat and Codex use
+  the same combined picker Button labels. Preserve existing Instant/Pro
+  `ChatEffort` configuration by mapping it to the current Light/Max endpoints.
+- Avoid the multi-second full-desktop UIA scan introduced by the new popup and
+  continue verifying the final model/Power Button before reporting success.
+- Update Quick Start, configuration guidance, Store copy, and regression notes
+  for the current picker labels while retaining the legacy Advanced path.
+
 ## 1.0.4 - 2026-09-01
 
 - Prevent the Microsoft Store, direct-installer, package-redirected, and legacy

@@ -10,6 +10,7 @@ installer/Uninstall.ps1         Installed uninstaller
 assets/ReasonKey.ico            Multi-resolution application icon
 scripts/Build.ps1               Reproducible local/CI build
 scripts/Build-Msix.ps1          MakeAppx/SignTool MSIX build
+scripts/Build-StoreUpdater.ps1  Native Windows Store update helper build
 scripts/Test-Msix.ps1           Packaged storage and launch validation
 scripts/Test-SingleInstance.ps1 Cross-path runtime singleton validation
 packaging/msix/                 Manifest, identity template, MSIX guide
@@ -65,9 +66,12 @@ the legacy `CodexModelHotkeys` configuration on first use.
 
 The separate [MSIX packaging guide](../packaging/msix/README.md) covers local
 signing/testing and the Partner Center identity build. `Build-Msix.ps1` creates
-the manifest assets, packages with the installed Windows SDK `MakeAppx.exe`,
-optionally signs with `SignTool.exe`, unpacks the result for structural
-verification, and writes package/runtime hashes plus build metadata.
+the native Store update helper with MSVC, creates the manifest assets, packages
+with the installed Windows SDK `MakeAppx.exe`, optionally signs with
+`SignTool.exe`, unpacks the result for structural verification, and writes
+package/runtime/helper hashes plus build metadata. MSIX builds therefore need
+Visual Studio Build Tools with the Desktop development with C++ workload and
+Windows SDK 10.0.26100.0; the direct EXE build does not.
 
 The Store package is intentionally unsigned when uploaded: Partner Center
 signs it after certification. A signed local development package uses the
@@ -78,24 +82,28 @@ in Local Computer -> Trusted People from an elevated PowerShell window.
 
 Test against an actual Codex/ChatGPT desktop window:
 
-1. Codex, Advanced already enabled:
+1. Current unified picker in Codex, starting closed:
    - F16 → `5.6 Luna High`
    - F17 → `5.6 Sol Light`
    - F18 → `5.6 Sol Extra High`
    - F19 → `5.6 Sol Max`
-2. Codex, compact/simple slider visible:
-   - trigger any preset that requires a different value;
-   - confirm `Show advanced options` is selected first;
-   - confirm the final combined picker button.
-3. Chat, Advanced already enabled with `Model 5.6 Sol`:
-   - F16 → `5.6 Sol Instant`;
+2. Current unified picker in Codex, starting already open:
+   - from compact `Select model` / `Power`, trigger a different preset;
+   - from the model radio view, trigger a different preset;
+   - confirm the final combined picker Button in both cases.
+3. Current unified picker in ChatGPT:
+   - F16 → `5.6 Sol Light`;
    - F17 → `5.6 Sol Medium`;
    - F18 → `5.6 Sol High`;
-   - F19 → `5.6 Sol Pro`.
-4. Chat, compact Power slider visible:
-   - trigger any preset that requires a different value;
-   - confirm `Show advanced options` is selected first;
-   - confirm the final visible effort on the Chat picker button.
+   - F19 → `5.6 Sol Max`;
+   - confirm the mode is detected from the visible ChatGPT mode switch and is
+     restored to Codex after any diagnostic test.
+4. Legacy picker compatibility (when an older supported app build is
+   available):
+   - compact `Show advanced options` uses focus + Enter;
+   - Advanced `Model …` / `Effort …` rows use focus + Right Arrow;
+   - legacy Chat maps F16-F19 to Instant, Medium, High, and Pro;
+   - confirm the final Button/parent-row state rather than trusting a UIA call.
 5. Reinstall over an existing version and confirm `presets.ini` is preserved.
 6. Uninstall and confirm the runtime, startup shortcut, registry entry, presets,
    and log are removed.
@@ -103,6 +111,10 @@ Test against an actual Codex/ChatGPT desktop window:
    - run `Test-Msix.ps1` and confirm packaged validation exits with `0`;
    - confirm `presets.ini`, its reference, and the log use package `LocalState`;
    - confirm startup is disabled by default and can be enabled in Startup Apps;
+   - confirm `ReasonKey.StoreUpdater.exe --package-probe` succeeds inside the
+     installed package and that a public Store launch logs an update check;
+   - for a real Store update, confirm the old process is replaced and ReasonKey
+     returns to the notification area on the new package version;
    - uninstall and confirm package-owned data is removed.
 8. Cross-channel singleton:
    - install or launch the direct and MSIX builds in both orders;

@@ -1,9 +1,10 @@
 # Notes for Microsoft Store certification
 
-ReasonKey is an open-source, full-trust Win32 tray utility packaged as
-MSIX. It requires no test account, product key, payment, network connection, or
-administrator privileges to launch and inspect its tray menu, configuration,
-privacy behavior, and quick-start window.
+ReasonKey is an open-source, full-trust Win32 tray utility packaged as MSIX. It
+requires no test account, product key, payment, or administrator privileges to
+launch and inspect its tray menu, configuration, privacy behavior, and
+quick-start window. Network access is optional for its Microsoft Store package
+update check; all core hotkey and UI Automation functionality works offline.
 
 ## First launch
 
@@ -39,9 +40,10 @@ desktop app is absent. For a complete functional test:
 4. Press F16, F17, F18, or F19.
 5. Confirm the combined model/effort label changes to the corresponding value.
 
-The same shortcuts must also be tested in a ChatGPT Chat composer. They select 5.6 Sol
-and map configured effort levels to Chat's Instant, Medium, High, Extra High,
-or Pro labels as documented in the public README.
+The same shortcuts must also be tested in a ChatGPT Chat composer. They select
+5.6 Sol with Light, Medium, High, and Max Power in the current unified picker.
+Legacy Instant and Pro configuration values map to the current Light and Max
+endpoints as documented in the public README.
 
 No publisher-supplied Codex or OpenAI credentials are required or included.
 
@@ -53,9 +55,12 @@ declares `runFullTrust`. Full trust is used only for:
 - registering user-configured keyboard shortcuts while the Codex/ChatGPT app is active;
 - using the documented Windows UI Automation API to locate the Codex or ChatGPT Chat
   model and reasoning-effort picker;
-- sending keyboard-accessible Enter and Right Arrow input to the focused picker
-  controls after a user presses a configured shortcut;
+- opening the picker through its documented UI Automation ExpandCollapse
+  pattern and sending keyboard-accessible Enter and Left/Right Arrow input to
+  focused picker controls after a user presses a configured shortcut;
 - maintaining a notification-area icon and user-invoked local files.
+- launching the packaged native update helper, which uses
+  `Windows.Services.Store` only for the current ReasonKey package.
 
 The AutoHotkey runtime imports generic `CreateProcessW` and `ShellExecuteExW`
 APIs and contains built-in interpreter strings such as `Reg`, which can trigger
@@ -80,8 +85,12 @@ does not modify Codex or ChatGPT files or settings outside the visible picker.
 ## Data and network behavior
 
 The runtime contains no telemetry, advertising, analytics, account system, or
-network client. It stores only `presets.ini`, a configuration reference, and a
-diagnostic log in package `LocalState`. Uninstalling the MSIX removes this
+OpenAI network client. On each launch, the Store-only native helper asks the
+Windows Microsoft Store service for updates to the current ReasonKey package.
+It installs silently only when the user's Store auto-update and network policy
+permit it; it does not contact Rotorlash Labs or GitHub. ReasonKey stores only
+`presets.ini`, a configuration reference, and a diagnostic log (including the
+update outcome) in package `LocalState`. Uninstalling the MSIX removes this
 package-owned data.
 
 Source code, build instructions, privacy policy, security policy, and

@@ -95,11 +95,73 @@
   analyzer warnings as 1.0.3. The dev package and temporary Local Machine
   Trusted People certificate were removed after validation.
 
+## Version 1.0.5 update preparation
+
+- Restored compatibility with the unified picker in Codex desktop package
+  `OpenAI.Codex_26.901.1978.0_x64__2p2nqsd0c76g0`.
+- The compiled runtime passed the real Codex F16-F19 matrix and the ChatGPT
+  F16-F19 matrix. Already-open compact and model-radio starting states also
+  passed against the source-equivalent runtime.
+- Clean direct and Store builds completed on 2026-09-02. Direct installer
+  SHA-256:
+  `698853B0087DFEB2B3089735732F326FCD5A79AA7CBBF9D10FE6AC7E0BC0A910`.
+- Store update package: `ReasonKey_1.0.5.0_x64.msix`. SHA-256:
+  `C176B7DA8EDB0BD3FCA48FF0F3DCFC603A3896A445855309D08B79B480099A1D`.
+- Build metadata confirms the Partner Center identity, x64 architecture,
+  version `1.0.5.0`, Microsoft Store submission purpose, and `signed: false`.
+- The updated Quick Start screenshot is a visually verified 1381x805 PNG with
+  SHA-256
+  `7F363AE1BBF79E041E06182BD2A12C4093214D0D1C25904BD8951E2CC3F1AEE9`.
+- Partner Center upload, WACK rerun, submission ID, and public Store validation
+  were superseded by the 1.0.6 update before submission.
+
+## Version 1.0.6 update evidence
+
+- Version 1.0.6 includes the unified Codex/ChatGPT picker fixes prepared for
+  1.0.5 plus a packaged-only Microsoft Store update check and automatic
+  post-update restart path.
+- `scripts/Build.ps1 -Clean` completed successfully. Final direct installer
+  SHA-256:
+  `511672EE9B5F18AF9F19218143AA2C8EB1692945CF1F1C51F398041B06DB3A0F`.
+- Reinstalling the final direct build returned exit code `0`, installed the
+  exact final runtime, kept `DisplayVersion` at `1.0.6`, and preserved the
+  existing `presets.ini` SHA-256 byte-for-byte:
+  `BCCAE2F718A47EE930BFCD497F7428853BF2251D8F35F7D4A49F041EB01B7BDD`.
+- Store update package: `ReasonKey_1.0.6.0_x64.msix`. Final SHA-256:
+  `DBA8ABD0AEC0770456D8A5A19F348B8A2AAA06C3EA12942DC7E76CA766F7F76C`.
+- Final Store updater SHA-256:
+  `7D63F49E5F5E4B2D73B118384B4F9FE20CA7DF6B3B72EA49879E5BF9668C0BED`.
+- Build metadata confirms the Partner Center identity, x64 architecture,
+  version `1.0.6.0`, Microsoft Store submission purpose, `signed: false`, and
+  matching package/runtime/updater hashes.
+- The exact final updater passed its self-test and, when invoked inside the
+  installed public `RotorlashLabs.ReasonKey` package identity, contacted the
+  Store service and returned `result=no-update` on 2026-09-02.
+- The final updater fallback waited for the old process, activated the Store
+  AUMID, logged `relaunch-requested=true`, and started exactly one Store
+  runtime. The direct runtime was restored afterward with exactly one active
+  ReasonKey process.
+- Direct-first and Store-first launch tests each left exactly one recognized
+  ReasonKey runtime. The compiled copied-path singleton probe also passed as
+  part of the clean build.
+- WACK 10.0.26100.8249 completed with overall `WARNING`, not overall `FAIL`.
+  The signed development package passed runtime validation with exit code `0`.
+  The report contains the previously documented generic AutoHotkey
+  blocked-executable and DPI analyzer findings; the new native Store updater
+  was inventoried without a separate failure.
+- The WACK development package and temporary Current User/Local Machine
+  development certificates were removed after validation.
+- The Quick Start window is content-sized at 701x534 logical pixels. The Store
+  asset frames the real compact window on a neutral 1600x900 canvas without
+  enlarging the app UI. Screenshot SHA-256:
+  `205351780926B4041CD6FBED1D1B515F3E427770CC1A374CC84DA0843AC30A74`.
+- Partner Center upload, submission ID, and certification status are pending.
+
 ## After certification
 
 - [ ] Install the public Store build on a clean Windows user profile.
 - [ ] Verify first launch, tray discovery, configuration, optional startup,
       compact/Advanced switching, update behavior, and clean uninstall.
 - [x] Add the final Microsoft Store URL to the README.
-- [ ] Ensure the direct installer and Store package cannot leave two active
+- [x] Ensure the direct installer and Store package cannot leave two active
       runtime instances on the same Windows session.

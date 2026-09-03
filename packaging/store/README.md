@@ -9,8 +9,9 @@ prepare a Partner Center submission:
   `runFullTrust` justification, and data/network behavior;
 - `SubmissionChecklist.md` - identity, build, validation, submission, and
   post-certification gates;
-- `assets/StoreScreenshot-ReasonKey-QuickStart.png` - actual application window captured
-  at 1369x799, above the 1366x768 Store minimum.
+- `assets/StoreScreenshot-ReasonKey-QuickStart.png` - the actual compact
+  application window, framed on a neutral 1600x900 canvas above the Store
+  minimum. The canvas does not change or enlarge the application UI.
 
 The 300x300 Store logo and manifest image variants are generated from
 `assets/ReasonKey.png` by `scripts/Build-Msix.ps1`. They appear under
@@ -19,7 +20,7 @@ the ignored `dist/store-assets/` and inside the MSIX package.
 ## Regenerating the screenshot
 
 Build the runtime, launch its Store-preview-only quick-start view, and capture
-the complete application window at 1366x768 or larger:
+the complete compact application window:
 
 ```powershell
 .\scripts\Build.ps1 -Clean
@@ -27,9 +28,16 @@ Start-Process .\dist\ReasonKey.exe `
   -ArgumentList '--preview-store-quick-start'
 ```
 
-The preview flag shows the same Store first-run content in a large capture
-window. It does not create a package identity or change Startup Apps settings.
-Close the preview after capturing it.
+The preview flag shows the same Store first-run content in a compact window. It
+does not create a package identity or change Startup Apps settings.
+Capture the window and then build the Store-sized neutral canvas:
+
+```powershell
+.\scripts\Capture-StoreWindow.ps1 -ProcessId <preview-process-id>
+.\scripts\Build-StoreScreenshot.ps1
+```
+
+Close the preview after the capture.
 
 ## Before upload
 

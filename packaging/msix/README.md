@@ -30,7 +30,7 @@ package-aware storage, and remove the package:
 
 ```powershell
 .\scripts\Test-Msix.ps1 `
-  -PackagePath .\dist\msix\ReasonKey_1.0.4.0_x64_Dev.msix `
+  -PackagePath .\dist\msix\ReasonKey_1.0.6.0_x64_Dev.msix `
   -TrustDevelopmentCertificate
 ```
 
@@ -64,7 +64,7 @@ cleanup together from an elevated PowerShell window:
 
 ```powershell
 .\scripts\Invoke-WindowsAppCertification.ps1 `
-  -PackagePath .\dist\msix\ReasonKey_1.0.4.0_x64_Dev.msix
+  -PackagePath .\dist\msix\ReasonKey_1.0.6.0_x64_Dev.msix
 ```
 
 The report is written below `.build\msix\wack\`.
@@ -88,7 +88,7 @@ The report is written below `.build\msix\wack\`.
    development package or its self-signed certificate.
 
 The version defaults to the runtime `AppVersion` plus a fourth `.0` component.
-For example, runtime version `1.0.4` becomes MSIX version `1.0.4.0`.
+For example, runtime version `1.0.6` becomes MSIX version `1.0.6.0`.
 
 ## Generated outputs
 
@@ -100,11 +100,11 @@ dist/store-assets/StoreLogo300x300.png
 packaging/store/assets/StoreScreenshot-ReasonKey-QuickStart.png
 ```
 
-The build metadata records the exact identity, version, runtime hash, package
-hash, source-runtime hash, architecture, purpose, and signing state. The
-packaged runtime receives the checked-in Per-Monitor V2 DPI manifest before its
-final hash is recorded. Generated package and Store assets are intentionally
-ignored by Git.
+The build metadata records the exact identity, version, runtime hash, native
+Store-updater hash, package hash, source-runtime hash, architecture, purpose,
+and signing state. The packaged runtime receives the checked-in Per-Monitor V2
+DPI manifest before its final hash is recorded. Generated package and Store
+assets are intentionally ignored by Git.
 
 ## Store-specific behavior
 
@@ -120,8 +120,14 @@ ignored by Git.
   mutex. If both channels are installed, only the first current runtime remains
   active; a second channel launch exits before it creates hotkeys or a tray
   icon.
-- The Store owns updates and uninstall. The MSIX does not install the project's
-  PowerShell uninstaller or write its own Installed Apps registry entry.
+- On each active launch of the exact public Store identity, the native helper
+  checks `Windows.Services.Store` for a ReasonKey update. It silently requests
+  installation only when Windows permits it, and Restart Manager returns the
+  runtime after package replacement. Development and direct builds do not
+  query the public Store identity.
+- The Store owns signing, package delivery, update policy, and uninstall. The
+  MSIX does not install the project's PowerShell uninstaller or write its own
+  Installed Apps registry entry.
 
 ## Required external values
 

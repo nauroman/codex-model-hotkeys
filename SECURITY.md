@@ -5,8 +5,10 @@ feature rather than a public issue.
 
 The runtime uses local Windows UI Automation only for the visible model/effort
 picker in Codex and ChatGPT Chat. It does not use an OpenAI API key, read task
-or conversation messages, or send telemetry. The release downloader contacts GitHub
-and verifies the setup executable against the release SHA-256 file.
+or conversation messages, or send telemetry. The MSIX-only helper contacts
+Microsoft Store through `Windows.Services.Store` solely to update ReasonKey;
+the direct EXE remains offline. The release downloader contacts GitHub and
+verifies the setup executable against the release SHA-256 file.
 
 See [PRIVACY.md](PRIVACY.md) for the complete local-data and network behavior
 statement used by the Microsoft Store listing.

@@ -3,7 +3,7 @@
 #NoTrayIcon
 
 global AppName := "ReasonKey"
-global AppVersion := "1.0.4"
+global AppVersion := "1.0.6"
 global InstallDirectory := EnvGet("LOCALAPPDATA") "\ReasonKey"
 global RuntimePath := InstallDirectory "\ReasonKey.exe"
 global ConfigPath := InstallDirectory "\presets.ini"
@@ -35,17 +35,17 @@ if InStr(DllCall("GetCommandLine", "Str"), " --validate")
     if IsInstalledRuntimePath(unrelatedPackagePath)
         ExitApp(15)
     storeRuntimePath := EnvGet("ProgramFiles")
-        . "\WindowsApps\RotorlashLabs.ReasonKey_1.0.4.0_x64__test"
+        . "\WindowsApps\RotorlashLabs.ReasonKey_1.0.6.0_x64__test"
         . "\ReasonKey.exe"
     if !IsInstalledRuntimePath(storeRuntimePath)
         ExitApp(16)
     developmentStoreRuntimePath := EnvGet("ProgramFiles")
-        . "\WindowsApps\RotorlashLabs.ReasonKey.Dev_1.0.4.0_x64__test"
+        . "\WindowsApps\RotorlashLabs.ReasonKey.Dev_1.0.6.0_x64__test"
         . "\ReasonKey.exe"
     if !IsInstalledRuntimePath(developmentStoreRuntimePath)
         ExitApp(17)
     unrelatedStoreRuntimePath := EnvGet("ProgramFiles")
-        . "\WindowsApps\RotorlashLabs.ReasonKey.Tools_1.0.4.0_x64__test"
+        . "\WindowsApps\RotorlashLabs.ReasonKey.Tools_1.0.6.0_x64__test"
         . "\ReasonKey.exe"
     if IsInstalledRuntimePath(unrelatedStoreRuntimePath)
         ExitApp(18)

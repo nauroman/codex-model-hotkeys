@@ -25,6 +25,8 @@ ReasonKey is also available from the
 [MSIX packaging](packaging/msix/README.md) for the reproducible package build,
 local test, identity, and submission process.
 
+![ReasonKey Quick Start window](packaging/store/assets/StoreScreenshot-ReasonKey-QuickStart.png)
+
 If you downloaded the source ZIP or cloned the repository, double-click
 [`Install.cmd`](Install.cmd). It verifies the published checksum before running
 the latest installer.
@@ -111,8 +113,9 @@ checked together:
   security guarantee; standard VirusTotal submissions are shared with its
   security partners.
 - Review [How it works](docs/HOW_IT_WORKS.md), including the documented runtime
-  boundaries: the runtime does not send network requests, use an API key, or
-  edit Codex/ChatGPT files.
+  boundaries: the direct EXE makes no network requests, while the Store package
+  asks Microsoft Store only for ReasonKey updates. Neither channel uses an API
+  key or edits Codex/ChatGPT files.
 - Review the [privacy policy](PRIVACY.md) and [security policy](SECURITY.md).
 
 ## Default shortcuts
@@ -124,19 +127,21 @@ checked together:
 | `F18` | GPT-5.6 Sol | Extra High (`xhigh`) |
 | `F19` | GPT-5.6 Sol | Max |
 
-When the composer is in **ChatGPT Chat** instead of **Codex**, the same hotkeys use an
-independent Chat scale:
+When the composer is in **ChatGPT Chat** instead of **Codex**, the same hotkeys
+select 5.6 Sol on Chat's independent Power scale:
 
-| Shortcut | Chat model | Chat effort |
+| Shortcut | Chat model | Power |
 |---|---|---|
-| `F16` | 5.6 Sol | Instant |
+| `F16` | 5.6 Sol | Light |
 | `F17` | 5.6 Sol | Medium |
 | `F18` | 5.6 Sol | High |
-| `F19` | 5.6 Sol | Pro |
+| `F19` | 5.6 Sol | Max |
 
-The Codex Model/Effort values in the table above remain unchanged. A Chat
-option that is unavailable for the current ChatGPT plan fails explicitly
-instead of silently choosing a different level.
+The Codex Model/Effort values in the table above remain unchanged. Existing
+configuration still uses the legacy `ChatEffort=Instant` and
+`ChatEffort=Pro` names; ReasonKey maps them to the current `Light` and `Max`
+Power endpoints. An unavailable option fails explicitly instead of silently
+choosing a different level.
 
 The shortcuts are active only while the Codex/ChatGPT desktop window is active. They do not
 capture these keys globally in other applications.
@@ -159,9 +164,11 @@ always-current commented example. Upgrades preserve the active `presets.ini`.
 Supported model names are `Luna`, `Terra`, and `Sol`. Supported effort names
 are `Light`, `Medium`, `High`, `Extra High`, `Max`, and `Ultra`, subject to what
 the selected model and your OpenAI account expose. Each preset can also set an
-independent `ChatEffort` of `Instant`, `Medium`, `High`, or `Pro`. Existing
-configuration files without `ChatEffort` automatically receive those four
-values for presets 1 through 4.
+independent `ChatEffort` of `Instant`, `Medium`, `High`, or `Pro`. Those names
+remain the configuration compatibility contract: current ChatGPT displays
+them as `Light`, `Medium`, `High`, and `Max`. Existing configuration files
+without `ChatEffort` automatically receive the four legacy values for presets
+1 through 4.
 
 AutoHotkey hotkey syntax is used. For example:
 
@@ -177,11 +184,11 @@ Effort=High
 
 ## How it works
 
-Both the Codex and ChatGPT Chat composers can show either the compact Power slider or
-the expanded Advanced picker. The utility detects the active composer and both
-picker states. When necessary, it enters Advanced mode, opens the Model and
-Effort flyout menus through their keyboard-accessible UI Automation controls,
-selects both values, and verifies the final picker state. It does not edit
+Current Codex and ChatGPT Chat composers use a unified picker with
+`Select model` and a keyboard-controlled Power row. ReasonKey also retains the
+older compact Power and expanded Advanced picker paths. It detects the active
+composer and an already-open picker, selects through keyboard-accessible UI
+Automation controls, and verifies the final picker Button. It does not edit
 Codex/ChatGPT files or send API requests.
 
 See [How it works](docs/HOW_IT_WORKS.md) for the state machine and selector
@@ -193,11 +200,11 @@ details.
 - Codex/ChatGPT Windows desktop app with a Codex or ChatGPT Chat composer
 - English UI labels in the current release
 
-The original Codex path was validated against desktop package
-`OpenAI.Codex_26.825.4187.0_x64__2p2nqsd0c76g0`; Chat support was developed
-against `OpenAI.Codex_26.825.5331.0_x64__2p2nqsd0c76g0`. UI Automation labels
-are not a public compatibility contract, so future desktop updates can require
-selector updates.
+The current unified Codex and ChatGPT paths were validated against desktop
+package `OpenAI.Codex_26.901.1978.0_x64__2p2nqsd0c76g0`. The legacy Advanced
+path remains for compatibility with the earlier 26.825 builds. UI Automation
+labels are not a public compatibility contract, so future desktop updates can
+require selector updates.
 
 ## Logs and troubleshooting
 
@@ -209,6 +216,14 @@ Right-click the tray icon and choose **Open log**. The log is stored at:
 
 The Microsoft Store package uses its per-user package `LocalState` directory;
 the tray command opens the correct log for the installed channel.
+
+On every active Microsoft Store launch, ReasonKey asks the Store whether a
+newer package is available. Windows installs it silently when the user's Store
+auto-update setting and network policy allow that, then restarts ReasonKey so
+it returns to the notification area. If Windows disallows a silent update
+(for example, auto-updates are disabled or the network is metered), ReasonKey
+does not override the user's setting and tries again on the next launch. The
+direct EXE does not run this Store-only update helper.
 
 See [Troubleshooting](docs/TROUBLESHOOTING.md) before opening an issue.
 

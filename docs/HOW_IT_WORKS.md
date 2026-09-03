@@ -11,38 +11,42 @@ High, and Sol Max.
 
 1. A configured hotkey fires only when the active process is the Codex/ChatGPT
    Windows desktop app.
-2. The script detects the visible picker button. Codex names this Button with
-   the combined value, for example `5.6 Sol Extra High`; Chat names it
-   `Select ChatGPT model` and exposes the visible effort inside the Button.
-3. In ChatGPT Chat, the preset's independent `ChatEffort` selects a `5.6 Sol` option.
-   The default F16-F19 values are Instant, Medium, High, and Pro. The preset's
-   Codex Model and Effort are not changed or remapped.
-4. The picker can be in one of two modes:
-   - **Compact/simple:** a Power slider and `Show advanced options` are visible.
-   - **Advanced:** `Model …`, `Effort …`, and `Speed …` rows are visible.
-5. In compact mode the script focuses `Show advanced options` and presses
-   `Enter`. In advanced mode this step is skipped.
-6. `Model …` and `Effort …` are flyout submenu triggers. The script focuses each
-   row and presses `Right Arrow` to open it.
-7. The requested model and effort options are focused and selected with
-   `Enter`.
-8. After each choice, the parent row must update before the script proceeds.
-9. The menu closes and the script verifies the actual picker **Button**. Codex
-   must have the exact combined Button label; Chat must retain its specific
-   Button and expose the selected effort as its current visible child.
+2. The script reads the visible mode switch to distinguish Codex from ChatGPT;
+   the current app uses the same combined picker Button label in both modes,
+   for example `5.6 Sol Extra High`.
+3. The top-level Button is opened with its UI Automation `ExpandCollapse`
+   pattern. The current Radix popup lives outside the main window's UIA tree,
+   so ReasonKey follows keyboard focus to the popup instead of scanning the
+   whole desktop.
+4. In the current unified picker, `Select model` opens the model radio view
+   with focus + `Enter`. The model option is also chosen with focus + `Enter`.
+   The compact `Power` row is focused, clamped with `Left Arrow`, then advanced
+   to the requested stop with `Right Arrow`.
+5. If the current compact picker or model view is already open, its focused
+   popup is used directly; the missing top-level trigger is not treated as a
+   failure.
+6. Older builds remain supported. Their compact `Show advanced options` toggle
+   uses focus + `Enter`, while Advanced `Model …` and `Effort …` flyout rows
+   use focus + `Right Arrow`; the requested options use focus + `Enter`.
+7. In ChatGPT, the preset's independent legacy `ChatEffort` remains compatible:
+   Instant, Medium, High, and Pro map to the current Light, Medium, High, and
+   Max Power labels while selecting 5.6 Sol.
+8. The menu closes and the script verifies the actual picker **Button** and its
+   exact model/Power label before reporting success.
 
 ## Why the keyboard path is intentional
 
-The Codex picker uses Radix/React flyout components. A UI Automation `Click()`
-can return success while the flyout remains closed. During development this
-caused misleading logs such as “element click succeeded” followed by “Luna
-option missing.”
+The picker uses Radix/React flyout components. A generic UI Automation
+`Click()` can report success while the flyout remains closed. In 26.901 it can
+also invoke multiple fallback patterns before React updates. ReasonKey now uses
+the Button's direct `ExpandCollapse` pattern and confirms that it expanded.
 
 The verified interaction is:
 
-- view toggle and selectable options: `SetFocus()` + `Enter`;
-- Model/Effort flyout rows: `SetFocus()` + `Right Arrow`;
-- top-level picker button: UI Automation click.
+- top-level picker Button: direct `ExpandCollapse` (legacy click fallback);
+- view toggles and selectable options: `SetFocus()` + `Enter`;
+- current Power row: `SetFocus()` + `Left/Right Arrow`;
+- legacy Model/Effort flyout rows: `SetFocus()` + `Right Arrow`.
 
 This path also avoids moving the user's mouse pointer.
 
@@ -51,10 +55,10 @@ This path also avoids moving the user's mouse pointer.
 React can temporarily retain old descendant text nodes during transitions. An
 untyped search once read a stale `Luna High` node after the real button had
 already changed to `Sol Light`. The final selector is constrained to the actual
-Button control. For Chat, the selected effort search is further bounded to the
-real `Select ChatGPT model` Button rather than the entire window. If Chromium
-makes that Button's text descendants presentational, the script reopens the
-same Button and verifies the persisted `Effort …` parent row before succeeding.
+Button control and strips only the optional `Fast` suffix before comparing the
+model and Power label. On older Chat builds whose Button is named
+`Select ChatGPT model`, ReasonKey retains the bounded descendant/Advanced-row
+verification path.
 
 ## Configuration
 
@@ -82,6 +86,27 @@ The Store manifest registers a disabled-by-default startup task. The user can
 enable it through Windows Startup Apps from the first-run guide or tray menu;
 the package does not create its own Startup-folder shortcut.
 
+## Microsoft Store updates
+
+The public Store package includes a small native helper that uses the official
+`Windows.Services.Store` API. Whenever the active Store runtime starts, the
+helper checks for updates associated with the current ReasonKey package
+identity. If an update is available and Windows permits silent Store updates,
+the helper asks Windows to download and install it. The direct EXE build does
+not contain or launch this helper.
+
+Before the check begins, the packaged runtime calls
+`RegisterApplicationRestart` with update restart enabled and crash, hang, and
+reboot restarts disabled. Package deployment normally terminates the running
+app while replacing it; Windows Restart Manager then returns ReasonKey to the
+notification area. A separate bounded activation fallback covers the path in
+which the Store operation completes without terminating the runtime.
+
+Silent installation remains governed by the user's Microsoft Store
+auto-update setting, metered-network policy, battery state, and Store service
+availability. ReasonKey records only the outcome in its local diagnostic log,
+does not bypass those policies, and checks again on the next launch.
+
 ## One runtime across both installation channels
 
 The direct installer, Microsoft Store package, Codex-package-redirected path,
@@ -100,7 +125,10 @@ of the onboarding text.
 
 - No Codex or ChatGPT configuration file is modified.
 - No OpenAI API key is used.
-- No network request is made by the runtime.
+- The direct runtime makes no network request. The public Store package uses
+  Windows Store services only to check for and install ReasonKey updates.
 - The installer/release downloader uses GitHub only to obtain release files.
-- The Microsoft Store owns MSIX signing, installation, updates, and uninstall.
+- Microsoft Store owns MSIX signing, package delivery, update policy, and
+  uninstall; ReasonKey only requests its own Store update through the supported
+  Windows API.
 - Compatibility depends on accessible English labels exposed by the desktop UI.
