@@ -27,4 +27,19 @@ Prepared 2026-09-05 (local time), with the final F19 Extra High correction.
   update/restart gates remain unverified for this release. Partner Center
   certification/publication is distinct from package upload validation.
 
-Publication status is recorded after the respective remote service confirms it.
+## Remote publication
+
+- GitHub release [v1.0.9](https://github.com/nauroman/codex-model-hotkeys/releases/tag/v1.0.9)
+  published from commit `c7ca2f0f87a831fffa8ee702f1c3404989a84a2b` and marked
+  latest. The uploaded setup's GitHub digest matches the hash above.
+- Both GitHub Actions runs for the release commit completed successfully:
+  `34009912404` and `34009913706`.
+- The public privacy-policy URL returned HTTP 200.
+- Store Submission 4 was submitted at approximately 20:50 local time on
+  2026-09-05 (2026-09-06 UTC). Partner Center confirmed **Update in certification**,
+  Submission complete and Pre-processing in progress. Publishing will start
+  automatically after certification. This is not yet public delivery of 1.0.9.
+- Updated listing description, release notes, the replacement screenshot and
+  its 1.0.9 caption were saved before submission. Certification instructions
+  were updated for Astra and independent Chat, with the local WACK limitation
+  explicitly stated.
