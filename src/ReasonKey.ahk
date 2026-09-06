@@ -11,6 +11,36 @@ if InStr(RawCommandLine, " /iLib ")
 
 if HasCommandLineArgument("--validate")
 {
+    ; Cover both generations through the same selectors used for opening,
+    ; reopening and verifying the picker, including cross-model rejection.
+    for modelName in ["Luna", "Terra", "Sol", "Astra"]
+    {
+        modelLabel := GetModelLabel(modelName)
+        for effortName in ["Light", "Medium", "High", "Extra High", "Max", "Ultra"]
+        {
+            preset := CreatePreset("F16", "Test", modelName, effortName, "Instant")
+            if preset.TriggerLabel != modelLabel " " effortName
+                ExitApp(61)
+            if !RegExMatch(preset.TriggerLabel, GetPickerTriggerPattern())
+                || !RegExMatch(preset.TriggerLabel " Fast", GetPickerTriggerPattern())
+                || !RegExMatch("GPT-" preset.TriggerLabel, GetPickerTriggerPattern())
+                || NormalizePickerLabel("GPT-" preset.TriggerLabel " Fast") != preset.TriggerLabel
+                ExitApp(62)
+        }
+        if !RegExMatch(modelLabel, GetModelOptionPattern(modelName))
+            || !RegExMatch("GPT-" modelLabel, GetModelOptionPattern(modelName))
+            ExitApp(63)
+    }
+    for alias in ["Astra", "astra", "GPT-6 Astra", "gpt-6-astra", "6 Astra"]
+        if NormalizeModelName(alias) != "Astra"
+            ExitApp(64)
+    for invalidLabel in ["5.6 Astra High", "6 Sol High", "6 Astra", "6 Astra Maximum"]
+        if RegExMatch(invalidLabel, GetPickerTriggerPattern())
+            ExitApp(65)
+    if RegExMatch("5.6 Sol", GetModelOptionPattern("Astra"))
+        || RegExMatch("6 Astra", GetModelOptionPattern("Sol"))
+        ExitApp(66)
+
     ultraPattern := GetEffortOptionPattern("Ultra")
     if !RegExMatch("Ultra Available on selected plans", ultraPattern)
         ExitApp(1)
@@ -126,7 +156,7 @@ UIA.SetMaximumDPIAwareness()
 Persistent true
 
 global AppName := "ReasonKey"
-global AppVersion := "1.0.6"
+global AppVersion := "1.0.9"
 global PackageFamilyName := GetPackageFamilyName()
 global DataDirectory := GetApplicationDataDirectory(PackageFamilyName)
 global ConfigPath := A_IsCompiled
@@ -159,6 +189,7 @@ LogMessage(
     " pid=" DllCall("GetCurrentProcessId")
     " packaged=" (PackageFamilyName != "" ? "true" : "false")
     " stopped-obsolete=" StoppedObsoleteRuntimeCount
+    " config=" ConfigPath
 )
 
 if IsMicrosoftStoreRuntime(PackageFamilyName)
@@ -556,10 +587,10 @@ ValidatePackagedRuntime()
 DefaultPresets()
 {
     return [
-        CreatePreset("F16", "Luna High", "Luna", "High", "Instant"),
-        CreatePreset("F17", "Sol Light", "Sol", "Light", "Medium"),
-        CreatePreset("F18", "Sol Extra High", "Sol", "Extra High", "High"),
-        CreatePreset("F19", "Sol Max", "Sol", "Max", "Pro")
+        CreatePreset("F16", "Astra Light", "Astra", "Light", "Instant"),
+        CreatePreset("F17", "Astra Medium", "Astra", "Medium", "Medium"),
+        CreatePreset("F18", "Astra High", "Astra", "High", "High"),
+        CreatePreset("F19", "Astra Extra High", "Astra", "Extra High", "Pro")
     ]
 }
 
@@ -606,9 +637,38 @@ CreatePreset(hotkeyName, displayName, modelName, effortName, chatEffortName)
     return {
         Hotkey: hotkeyName,
         Name: displayName,
-        TriggerLabel: "5.6 " modelName " " effortName,
+        TriggerLabel: GetModelLabel(modelName) " " effortName,
         ChatEffort: chatEffortName
     }
+}
+
+GetModelLabel(modelName)
+{
+    return (modelName = "Astra" ? "6 " : "5.6 ") modelName
+}
+
+GetModelOptionPattern(modelName)
+{
+    return "^(?:GPT-)?" StrReplace(GetModelLabel(modelName), ".", "\.") "$"
+}
+
+GetPickerTriggerPattern()
+{
+    return "^(?:GPT-)?(?:5\.6 (?:Luna|Terra|Sol)|6 Astra) (Light|Medium|High|Extra High|Max|Ultra)( Fast)?$"
+}
+
+NormalizePickerLabel(label)
+{
+    return RegExReplace(RegExReplace(label, "^GPT-"), " Fast$")
+}
+
+GetConfiguredPresetSummary()
+{
+    global Presets
+    summary := ""
+    for preset in Presets
+        summary .= (summary = "" ? "" : "`n") preset.Hotkey "  -  " preset.TriggerLabel
+    return summary
 }
 
 NormalizeModelName(value)
@@ -618,6 +678,7 @@ NormalizeModelName(value)
         case "luna": return "Luna"
         case "terra": return "Terra"
         case "sol": return "Sol"
+        case "astra", "gpt-6-astra", "gpt-6 astra", "6 astra": return "Astra"
         default: return ""
     }
 }
@@ -763,12 +824,11 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     )
 
     guideGui.SetFont(sectionFont, "Segoe UI")
-    guideGui.AddText(sectionOptions, "Default Codex shortcuts")
+    guideGui.AddText(sectionOptions, "Configured Codex shortcuts")
     guideGui.SetFont(bodyFont, "Segoe UI")
     guideGui.AddText(
         bodyOptions,
-        "F16  -  Luna High        F17  -  Sol Light`n"
-        . "F18  -  Sol Extra High   F19  -  Sol Max"
+        GetConfiguredPresetSummary()
     )
 
     guideGui.SetFont(sectionFont, "Segoe UI")
@@ -776,9 +836,9 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     guideGui.SetFont(bodyFont, "Segoe UI")
     guideGui.AddText(
         bodyOptions,
-        "The same F16-F19 keys select 5.6 Sol with Light, Medium, High, "
-        . "and Max power respectively. Codex and Chat keep independent "
-        . "selections."
+        "Chat has its own ChatEffort settings: Instant, Medium, High, and Pro "
+        . "by default, using 5.6 Sol. Some picker versions display the endpoints "
+        . "as Light and Max. Codex and Chat keep independent selections."
     )
 
     guideGui.SetFont(sectionFont, "Segoe UI")
@@ -956,16 +1016,16 @@ SelectPreset(index, *)
     }
 }
 
-SelectCombinedPreset(targetLabel, targetChatEffort)
+SelectCombinedPreset(targetLabel, targetChatEffort, recoverOpenPicker := true)
 {
-    if !RegExMatch(targetLabel, "^5\.6 (Luna|Terra|Sol) (.+)$", &targetMatch)
+    if !RegExMatch(targetLabel, "^(?:5\.6 (Luna|Terra|Sol)|6 (Astra)) (.+)$", &targetMatch)
     {
         LogMessage("invalid target label=" targetLabel)
         return false
     }
 
-    targetModel := targetMatch[1]
-    targetEffort := targetMatch[2]
+    targetModel := targetMatch[1] != "" ? targetMatch[1] : targetMatch[2]
+    targetEffort := targetMatch[3]
     windowHandle := WinExist("A")
     windowElement := UIA.ElementFromHandle(windowHandle)
 
@@ -987,13 +1047,13 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
         : targetEffort
     modernTargetLabel := modernTargetEffort = ""
         ? ""
-        : "5.6 " modernTargetModel " " modernTargetEffort
+        : GetModelLabel(modernTargetModel) " " modernTargetEffort
 
     LogMessage("picker-kind=" pickerKind)
     currentLabel := ""
     if modelPickerTrigger
     {
-        currentLabel := RegExReplace(modelPickerTrigger.Name, " Fast$")
+        currentLabel := NormalizePickerLabel(modelPickerTrigger.Name)
         LogMessage("model picker trigger=" modelPickerTrigger.Name)
         if modernTargetLabel != "" && currentLabel = modernTargetLabel
             return currentLabel
@@ -1013,11 +1073,47 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
         ; focused element still leads to the popup, so accept that state.
         pickerRoot := GetPickerSearchRoot(windowElement)
         LogMessage("model picker already open")
+        if pickerKind = "codex"
+        {
+            if !recoverOpenPicker
+                return false
+            ; An already-open unified popup can retain stale model-view
+            ; elements. Close it through the keyboard and verify the actual
+            ; Button before reopening via the controlled ExpandCollapse path.
+            loop 2
+            {
+                Send("{Escape}")
+                Sleep(400)
+                freshWindow := UIA.ElementFromHandle(windowHandle)
+                if FindCodexPickerTrigger(freshWindow)
+                {
+                    LogMessage("open picker normalized to verified Button")
+                    ; A popup teardown can race the first reopened selection.
+                    ; Retry once only after restoring a real closed Button;
+                    ; each attempt still verifies the final model and effort.
+                    loop 2
+                    {
+                        result := SelectCombinedPreset(targetLabel, targetChatEffort, false)
+                        if result
+                            return result
+                        Send("{Escape}")
+                        Sleep(400)
+                        if !FindCodexPickerTrigger(UIA.ElementFromHandle(windowHandle))
+                            return false
+                        if A_Index = 1
+                            LogMessage("retrying selection after open picker teardown")
+                    }
+                    return false
+                }
+            }
+            LogMessage("open picker did not restore its Button")
+            return false
+        }
     }
 
     pickerElement := WaitAnyVisibleElement(pickerRoot, [
         "^Select model$",
-        "^(?:GPT-)?5\.6 (?:Luna|Terra|Sol)$",
+        "^(?:GPT-)?(?:5\.6 (?:Luna|Terra|Sol)|6 Astra)$",
         "^Power$",
         "^Show advanced options$",
         "^Show compact options$",
@@ -1051,7 +1147,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
     )
     modernModelOption := FindVisibleElement(
         pickerRoot,
-        "^(?:GPT-)?5\.6 " modernTargetModel "$",
+        GetModelOptionPattern(modernTargetModel),
         "RadioButton"
     )
     if modernModelRow || modernModelOption
@@ -1070,7 +1166,9 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
             modernModelOption,
             modernTargetLabel,
             modernTargetModel,
-            modernTargetEffort
+            modernTargetEffort,
+            pickerKind = "chat" && !!FindChatPickerTrigger(windowElement)
+                ? targetChatEffort : ""
         )
     }
 
@@ -1104,7 +1202,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
 
             try reopenedTrigger := windowElement.FindElement({
                 Type: "Button",
-                Name: "^5\.6 (Luna|Terra|Sol) (Light|Medium|High|Extra High|Max|Ultra)( Fast)?$",
+                Name: GetPickerTriggerPattern(),
                 mm: "RegEx",
                 IsOffscreen: 0
             })
@@ -1133,7 +1231,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
     Sleep(250)
     modelOption := WaitVisibleElement(
         windowElement,
-        "^(?:GPT-)?5\.6 " targetModel "$",
+        GetModelOptionPattern(targetModel),
         2200,
         "MenuItem"
     )
@@ -1148,7 +1246,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
     ; row reflects the newly selected model first.
     updatedModelRow := WaitVisibleElement(
         windowElement,
-        "^Model (?:GPT-)?5\.6 " targetModel "$",
+        "^Model " SubStr(GetModelOptionPattern(targetModel), 2),
         3000,
         "MenuItem"
     )
@@ -1160,7 +1258,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
     {
         pickerTrigger := FindVisibleElement(
             windowElement,
-            "^5\.6 (Luna|Terra|Sol) (Light|Medium|High|Extra High|Max|Ultra)( Fast)?$",
+            GetPickerTriggerPattern(),
             "Button"
         )
         if pickerTrigger
@@ -1170,7 +1268,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
             Sleep(450)
             updatedModelRow := WaitVisibleElement(
                 windowElement,
-                "^Model (?:GPT-)?5\.6 " targetModel "$",
+                "^Model " SubStr(GetModelOptionPattern(targetModel), 2),
                 2500,
                 "MenuItem"
             )
@@ -1193,7 +1291,7 @@ SelectCombinedPreset(targetLabel, targetChatEffort)
     {
         try currentTrigger := windowElement.FindElement({
             Type: "Button",
-            Name: "^5\.6 (Luna|Terra|Sol) (Light|Medium|High|Extra High|Max|Ultra)( Fast)?$",
+            Name: GetPickerTriggerPattern(),
             mm: "RegEx",
             IsOffscreen: 0
         })
@@ -1259,10 +1357,11 @@ SelectModernPickerPreset(
     visibleModelOption,
     targetLabel,
     targetModel,
-    targetEffort
+    targetEffort,
+    chatEffort := ""
 )
 {
-    targetOptionPattern := "^(?:GPT-)?5\.6 " targetModel "$"
+    targetOptionPattern := GetModelOptionPattern(targetModel)
 
     if modelViewToggle
     {
@@ -1299,6 +1398,29 @@ SelectModernPickerPreset(
     ; requested effort. This is independent of the previous model and effort.
     Sleep(400)
     pickerRoot := GetPickerSearchRoot()
+    if chatEffort != ""
+    {
+        ; Chat's aria-labelled Button only exposes the version and effort as
+        ; descendants. Confirm the selected model radio separately first.
+        modelToggle := WaitVisibleElement(pickerRoot, "^Select model$", 2000, "MenuItem")
+        if !modelToggle || !SelectMenuOption(modelToggle)
+            return false
+        modelSelection := WaitModernModelSelection(targetOptionPattern, 2500)
+        modelConfirmed := false
+        if modelSelection
+            try modelConfirmed := modelSelection[2].SelectionItemIsSelected
+        if !modelConfirmed
+        {
+            LogMessage("modern model radio was not selected=" targetModel)
+            try Send("{Escape}")
+            return false
+        }
+        LogMessage("modern-model-confirmed=" modelSelection[2].Name)
+        if !SelectMenuOption(modelSelection[2])
+            return false
+        Sleep(300)
+        pickerRoot := GetPickerSearchRoot()
+    }
     powerRow := WaitVisibleElement(
         pickerRoot,
         "^Power$",
@@ -1315,8 +1437,8 @@ SelectModernPickerPreset(
 
     try
     {
-        powerRow.SetFocus()
-        Sleep(100)
+        if !FocusPickerElement(powerRow)
+            throw Error("Power did not receive keyboard focus")
 
         ; Six supported effort levels are the maximum currently exposed. A
         ; few extra Left presses are harmless and make the start deterministic.
@@ -1344,6 +1466,12 @@ SelectModernPickerPreset(
     Sleep(300)
 
     freshWindowElement := UIA.ElementFromHandle(windowHandle)
+    if chatEffort != ""
+    {
+        selectedEffort := WaitModernChatTriggerValue(freshWindowElement, chatEffort, 3200)
+        LogMessage("modern-chat-selected=" selectedEffort)
+        return selectedEffort = chatEffort ? GetModelLabel(targetModel) " " chatEffort : false
+    }
     selectedLabel := WaitSelectedTriggerLabel(
         freshWindowElement,
         targetLabel,
@@ -1690,13 +1818,19 @@ FindCodexPickerTrigger(windowElement)
 {
     return FindVisibleElement(
         windowElement,
-        "^5\.6 (Luna|Terra|Sol) (Light|Medium|High|Extra High|Max|Ultra)( Fast)?$",
+        GetPickerTriggerPattern(),
         "Button"
     )
 }
 
 IsChatComposer(windowElement)
 {
+    ; The sidebar can say ChatGPT while an existing Work/Codex composer is
+    ; visible. Prefer the actual composer Button over the navigation mode.
+    if FindChatPickerTrigger(windowElement)
+        return true
+    if FindVisibleElement(windowElement, "^(?:Do anything|Work with ChatGPT)$", "Edit")
+        return false
     return !!FindVisibleElement(
         windowElement,
         "^Switch mode, current mode: ChatGPT$",
@@ -1803,6 +1937,29 @@ GetPickerSearchRoot(fallbackRoot := false)
     try return UIA.GetRootElement()
     catch
         return false
+}
+
+WaitModernChatTriggerValue(windowElement, targetValue, timeout)
+{
+    deadline := A_TickCount + timeout
+    loop
+    {
+        trigger := FindChatPickerTrigger(windowElement)
+        if trigger && FindVisibleElement(trigger, "^" targetValue "$", "Text")
+            return targetValue
+        if A_TickCount >= deadline
+            break
+        Sleep(75)
+    }
+
+    ; Some Chromium builds hide the Button descendants. Verify the persisted
+    ; Power status inside the focused popup instead of a Codex Button label.
+    if !trigger || !OpenPickerTrigger(trigger)
+        return ""
+    root := GetPickerSearchRoot(windowElement)
+    persisted := WaitVisibleElement(root, "^" targetValue ", [1-9][0-9]* of [1-9][0-9]*\.$", 2000, "Text")
+    try Send("{Escape}")
+    return persisted ? targetValue : ""
 }
 
 WaitSelectedChatTriggerValue(windowElement, targetValue, timeout)
@@ -1975,8 +2132,8 @@ OpenSubmenu(element)
     try
     {
         elementName := element.Name
-        element.SetFocus()
-        Sleep(100)
+        if !FocusPickerElement(element)
+            return false
         Send("{Right}")
         LogMessage("submenu-open=" elementName)
         return true
@@ -1993,8 +2150,8 @@ SelectMenuOption(element)
     try
     {
         elementName := element.Name
-        element.SetFocus()
-        Sleep(100)
+        if !FocusPickerElement(element)
+            return false
         Send("{Enter}")
         LogMessage("option-select=" elementName)
         return true
@@ -2004,6 +2161,22 @@ SelectMenuOption(element)
         LogMessage("option select failed=" err.Message)
         return false
     }
+}
+
+FocusPickerElement(element)
+{
+    expectedName := element.Name
+    actualName := ""
+    loop 4
+    {
+        element.SetFocus()
+        Sleep(150)
+        try actualName := UIA.GetFocusedElement().Name
+        if actualName = expectedName
+            return true
+    }
+    LogMessage("picker focus mismatch expected=" expectedName " actual=" actualName)
+    return false
 }
 
 WaitSelectedTriggerLabel(windowElement, targetLabel, timeout)
@@ -2032,13 +2205,13 @@ GetSelectedTriggerLabel(windowElement)
         ; retained by React during a menu transition.
         trigger := windowElement.FindElement({
             Type: "Button",
-            Name: "^5\.6 (Luna|Terra|Sol) (Light|Medium|High|Extra High|Max|Ultra)( Fast)?$",
+            Name: GetPickerTriggerPattern(),
             mm: "RegEx",
             IsOffscreen: 0
         })
 
         if trigger
-            return RegExReplace(trigger.Name, " Fast$")
+            return NormalizePickerLabel(trigger.Name)
     }
     catch as err
     {

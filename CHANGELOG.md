@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.0.9 - 2026-09-05
+
+- Set the final Codex F19 default to Astra Extra High per the updated user
+  selection; F16-F18 remain Light/Medium/High and Chat retains its own presets.
+- Restore ordinary Chat's independent Instant/Medium/High/Pro presets on Sol.
+  Verify the selected model radio and the stable Chat Button's effort text,
+  with a persisted Power-status fallback when descendants are hidden.
+- Detect the actual composer before the sidebar mode so Work/Codex selections
+  remain independent from ordinary Chat settings.
+- Verify keyboard focus before selecting options or changing Power. Normalize
+  an already-open Codex popup through its actual Button, with a bounded retry
+  if the reopened selection fails final verification.
+- Update onboarding and configuration guidance for both Chat picker variants.
+- Fix reinstall's already-exited-process race: check process existence after
+  waiting instead of treating a zero wait return as a failure.
+
+## 1.0.8 - 2026-09-05
+
+- Fix the real `GPT-6 Astra` Button label: accept the GPT prefix and normalize
+  it before exact model/effort verification.
+- Set new-install defaults to Astra Light, Medium, High and Max on F16-F19.
+  Existing installed presets remain preserved by upgrades.
+- Show the loaded Codex presets in Quick Start instead of hard-coded defaults.
+- Wait for the old runtime to stop and for the new version/PID to confirm
+  startup before the installer reports completion. Log the active config path.
+
+## 1.0.7 - 2026-09-05
+
+- Add `Model=Astra` for GPT-6 Astra, including model options, legacy Advanced
+  rows, and opening/reopening/verifying the `6 Astra` picker Button.
+- Recognize Astra when switching back to Luna, Terra, or Sol. Preserve existing
+  presets, ChatEffort mappings, and keyboard-accessible picker interactions.
+- Extend build-time validation across all four models and six effort labels,
+  including Fast labels and rejection of mismatched model generations.
+
 ## 1.0.6 - 2026-09-02
 
 - Check Microsoft Store for an updated ReasonKey package whenever the active

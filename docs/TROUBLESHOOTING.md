@@ -12,6 +12,10 @@
    %LOCALAPPDATA%\ReasonKey\ReasonKey.exe
    ```
 
+   That path is for the direct installation. For Microsoft Store, launch
+   ReasonKey from Start or its Store page. With both channels installed, the
+   first current runtime owns the tray icon; see [lifecycle](product-spec/installation.md).
+
 ## “Model picker trigger was not found”
 
 The desktop app's accessible label probably changed, the composer is not
@@ -29,9 +33,10 @@ When reporting this problem, include:
 
 ## “Advanced toggle was not found”
 
-The script accepts both initial states: compact mode and already-expanded
-Advanced mode. This error means neither the Advanced toggle nor the Model row
-was exposed in the UI Automation tree before the timeout.
+This is a legacy-picker error: neither the Advanced toggle nor the Model row
+appeared before timeout. Unified pickers use Select model and Power instead.
+Both paths and already-open views are supported; include the starting view in
+your report. See the [picker contract](product-spec/picker.md).
 
 ## A model or effort option is missing
 
@@ -61,6 +66,11 @@ Useful terminal command:
 ```powershell
 Get-Content "$env:LOCALAPPDATA\ReasonKey\ReasonKey.log" -Tail 100
 ```
+
+These paths are for the direct install. Store logs use the package's per-user
+LocalState/ReasonKey directory; **Open log** selects the active channel's file.
+Review logs for private paths before sharing. Full path ownership is documented
+in [installation](product-spec/installation.md).
 
 If installation itself fails, its diagnostic log is stored at:
 

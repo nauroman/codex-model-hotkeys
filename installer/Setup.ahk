@@ -3,7 +3,7 @@
 #NoTrayIcon
 
 global AppName := "ReasonKey"
-global AppVersion := "1.0.6"
+global AppVersion := "1.0.9"
 global InstallDirectory := EnvGet("LOCALAPPDATA") "\ReasonKey"
 global RuntimePath := InstallDirectory "\ReasonKey.exe"
 global ConfigPath := InstallDirectory "\presets.ini"
@@ -142,9 +142,26 @@ InstallApplication()
     runtimeCommand := '"' RuntimePath '"'
     if !SilentInstall
         runtimeCommand .= " --show-quick-start"
-    Run(runtimeCommand, InstallDirectory)
+    Run(runtimeCommand, InstallDirectory, , &runtimePid)
+    ; A successful CreateProcess is not proof that the replacement became
+    ; active: a losing singleton launch exits before registering its hotkeys.
+    startupRecord := "script-start version=" AppVersion " pid=" runtimePid " "
+    startupDeadline := A_TickCount + 8000
+    started := false
+    loop
+    {
+        if !ProcessExist(runtimePid)
+            break
+        try started := InStr(FileRead(InstallDirectory "\ReasonKey.log", "UTF-8"), startupRecord)
+        if started || A_TickCount >= startupDeadline
+            break
+        Sleep(100)
+    }
+    if !started
+        throw Error("The new ReasonKey runtime did not confirm startup. See ReasonKey.log.")
     try FileAppend(
-        FormatTime(, "yyyy-MM-dd HH:mm:ss") " install-complete path=" InstallDirectory "`n",
+        FormatTime(, "yyyy-MM-dd HH:mm:ss") " install-complete version=" AppVersion
+        " pid=" runtimePid " path=" InstallDirectory "`n",
         SetupLogPath,
         "UTF-8"
     )
@@ -153,8 +170,6 @@ InstallApplication()
 
 StopInstalledRuntime()
 {
-    try
-    {
         service := ComObjGet("winmgmts:")
         query := "SELECT ProcessId, ExecutablePath FROM Win32_Process "
             . "WHERE Name = 'ReasonKey.exe' OR Name = 'CodexModelHotkeys.exe'"
@@ -168,9 +183,12 @@ StopInstalledRuntime()
 
             processId := process.ProcessId
             process.Terminate()
-            try ProcessWaitClose(processId, 3)
+            ProcessWaitClose(processId, 5)
+            ; A zero return can mean it exited before the wait began.
+            ; Inspect the resulting process state, not the wait's return.
+            if ProcessExist(processId)
+                throw Error("The previous ReasonKey runtime did not stop (PID " processId ").")
         }
-    }
 }
 
 IsInstalledRuntimePath(processPath)

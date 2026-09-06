@@ -21,17 +21,17 @@ earlier compact/Advanced picker in both Codex and ChatGPT Chat, uses
 keyboard-accessible Windows UI Automation controls, and verifies the final
 selected value.
 
-In a ChatGPT Chat composer, the same shortcuts select 5.6 Sol with Light,
-Medium, High, and Max Power. Existing Instant and Pro configuration names are
-mapped to the current Light and Max endpoints for compatibility. Availability
+In a ChatGPT Chat composer, the same shortcuts select 5.6 Sol with Instant,
+Medium, High, and Pro Power. Older combined-label pickers display the endpoints
+as Light and Max; that compatibility is retained. Availability
 still depends on the user's ChatGPT plan.
 
 Default presets:
 
-- F16: GPT-5.6 Luna, High
-- F17: GPT-5.6 Sol, Light
-- F18: GPT-5.6 Sol, Extra High
-- F19: GPT-5.6 Sol, Max
+- F16: GPT-6 Astra, Light
+- F17: GPT-6 Astra, Medium
+- F18: GPT-6 Astra, High
+- F19: GPT-6 Astra, Extra High
 
 Shortcuts and presets can be edited in a documented `presets.ini` file from the
 tray menu. The utility acts only while the Codex/ChatGPT desktop app window is
@@ -84,10 +84,11 @@ Copyright 2026 ReasonKey contributors. Codex, ChatGPT, and OpenAI are the
 property of their respective owners. This product is not affiliated with or
 endorsed by OpenAI.
 
-## What's new in 1.0.6
+## What's new in 1.0.9
 
-- Check Microsoft Store for ReasonKey updates on every Store launch.
-- Silently install available updates when Windows permits automatic Store
-  updates, then return ReasonKey to the notification area.
-- Keep the direct EXE offline and leave Store policy and metered-network choices
-  under the user's control.
+- Support GPT-6 Astra and the updated desktop model picker.
+- New Codex defaults: Light, Medium, High, and Extra High on F16-F19.
+- Restore ChatGPT's independent Sol Instant, Medium, High, and Pro selection.
+- Improve keyboard-focus and final-selection verification.
+- Preserve existing presets during upgrades. To adopt Astra in an existing
+  installation, edit presets.ini using the refreshed configuration guide.

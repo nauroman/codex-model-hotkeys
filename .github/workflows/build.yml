@@ -9,6 +9,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate documentation
+        shell: powershell
+        run: .\scripts\Test-Documentation.ps1
       - name: Build runtime and installer
         shell: powershell
         run: .\scripts\Build.ps1 -Clean

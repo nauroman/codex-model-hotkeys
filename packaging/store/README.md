@@ -1,7 +1,11 @@
 # Microsoft Store submission materials
 
 This directory contains the text and checked-in visual evidence needed to
-prepare a Partner Center submission:
+prepare a Partner Center submission.
+
+These are public-facing submission materials. Engineering contracts are routed
+by the [product core](../../docs/product-spec.md); release history is kept in
+[diagnostics](../../docs/diagnostics/store-release-history.md).
 
 - `StoreListing.en-US.md` - product name, descriptions, features, requirements,
   search terms, URLs, and trademark disclaimer;

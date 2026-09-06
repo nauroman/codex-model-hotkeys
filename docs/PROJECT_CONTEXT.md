@@ -1,228 +1,56 @@
-# Project context for continued Codex work
+# ReasonKey implementation map
 
-## Goal
+Source/navigation context, not a second product specification or a release log.
+Read the [product core](product-spec.md) and affected owners first.
+Snapshot: 2026-09-05; working-tree runtime and installer declare AppVersion 1.0.9.
+Source support includes Astra; this snapshot does not establish publication.
 
-Provide **ReasonKey**, an easy public Windows utility that switches model and
-effort presets in both the Codex and ChatGPT Chat composers. The original Codex presets
-are:
+## Repository
 
-- F16: GPT-5.6 Luna High
-- F17: GPT-5.6 Sol Light
-- F18: GPT-5.6 Sol Extra High (`xhigh`)
-- F19: GPT-5.6 Sol Max
+Checkout: C:\Users\user\Documents\Codex\codexmodelhotkeys.
+Public product: ReasonKey; repository: nauroman/codex-model-hotkeys.
+Historical product names are migration inputs, not current branding.
 
-Ctrl+Alt+mouse-wheel preset cycling was removed on 2026-08-28 because it was
-unreliable and not needed. Existing installed `presets.ini` files remain
-preserved during upgrades, but the runtime ignores the old `CycleUp` and
-`CycleDown` keys.
+| Responsibility | Source / entry points | Contract |
+|---|---|---|
+| Preset parsing and registration | [src/ReasonKey.ahk](../src/ReasonKey.ahk): LoadPresets, DefaultPresets, RegisterConfiguredHotkeys; [default INI](../config/default-presets.ini) | [Configuration](product-spec/configuration.md) |
+| Active-window selection and UIA | ReasonKey.ahk: IsSupportedAppWindow, SelectPreset, SelectCombinedPreset, SelectModernPickerPreset, SelectChatPreset, OpenPickerTrigger, GetPickerSearchRoot, WaitSelectedTriggerLabel | [Picker](product-spec/picker.md) |
+| Data, lifecycle and onboarding | ReasonKey.ahk: GetApplicationDataDirectory, InitializeConfigurationFiles, AcquireRuntimeMutex, StopOtherReasonKeyRuntimes, ShowQuickStart | [Installation](product-spec/installation.md) |
+| Direct setup/removal | [Setup.ahk](../installer/Setup.ahk), [Uninstall.ps1](../installer/Uninstall.ps1), [Install-Latest.ps1](../scripts/Install-Latest.ps1) | [Installation](product-spec/installation.md) |
+| Store update/restart | ReasonKey.ahk: StartStoreUpdateCheck, CheckStoreUpdateProcess; [native helper](../src/StoreUpdater/ReasonKey.StoreUpdater.cpp) | [Store updates](product-spec/store-updates.md) |
+| Package identity/startup/DPI | [MSIX manifest](../packaging/msix/AppxManifest.xml.template), [EXE manifest](../packaging/msix/ReasonKey.exe.manifest) | [MSIX guide](../packaging/msix/README.md) |
+| Icon and screenshots | [icon](../assets/ReasonKey.ico), [source artwork](../assets/ReasonKey.png), [Store materials](../packaging/store/README.md) | [Installation](product-spec/installation.md) |
+| Dependency | [UIA-v2](../vendor/UIA-v2/Lib/UIA.ahk) | [Pinned provenance/license](../THIRD_PARTY_NOTICES.md) |
 
-The repository also maintains an MSIX/Microsoft Store channel under the
-**ReasonKey** product name and **Rotorlash Labs** publisher. It shares the
-compiled runtime, uses package `LocalState` for writable configuration/logs,
-migrates but does not delete an existing direct-install configuration, and
-registers an optional startup task disabled by default. Store identity values
-must come exactly from Partner Center; never invent or commit them.
+## Validation entry points
 
-Starting with 1.0.6, the public Store identity also runs a native MSIX-only
-update helper on each active launch. It uses `Windows.Services.Store` to check
-and silently install an available ReasonKey update when Windows policy permits.
-The AHK runtime registers with Restart Manager before the check so package
-replacement can relaunch it. The direct installer remains network-free.
+| Change | Entry point / what it establishes |
+|---|---|
+| Documentation | [Test-Documentation.ps1](../scripts/Test-Documentation.ps1): local links, structure, routing |
+| Direct build | [Build.ps1](../scripts/Build.ps1): compile, built-in validation, copied-path singleton and uninstaller guards |
+| Native helper | [Build-StoreUpdater.ps1](../scripts/Build-StoreUpdater.ps1): compile/self-test |
+| Package structure | [Build-Msix.ps1](../scripts/Build-Msix.ps1): manifest/package/hash metadata |
+| Packaged runtime/storage | [Test-Msix.ps1](../scripts/Test-Msix.ps1) |
+| Isolated singleton | [Test-SingleInstance.ps1](../scripts/Test-SingleInstance.ps1) |
+| Certification tools | [Invoke-WindowsAppCertification.ps1](../scripts/Invoke-WindowsAppCertification.ps1) |
+| Real picker/install/update | [Development regression matrix](DEVELOPMENT.md) |
 
-The public name changed from **Codex Model Hotkeys** to **ReasonKey** before
-the first Store submission. New artifacts, paths, and application metadata use
-`ReasonKey`; upgrade paths preserve `presets.ini` from the legacy
-`CodexModelHotkeys` data directory.
+The [CI workflow](../.github/workflows/build.yml) builds direct and unsigned MSIX
+artifacts. It does not operate a real signed-in Codex/ChatGPT window or establish
+public Store delivery.
 
-## Local project
+## Evidence boundaries
 
-Canonical repository working directory:
+This snapshot comes from source inspection, not a new runtime/build/Store test.
+[Picker history](diagnostics/picker-validation-history.md) records earlier app
+versions and transitions. [Store history](diagnostics/store-release-history.md)
+records builds, hashes, confirmations and submission states through 1.0.6.
+Read either only for a matching investigation.
 
-```text
-C:\Users\user\Documents\Codex\codexmodelhotkeys
-```
+[Astra development evidence](diagnostics/astra-validation-20260905.md) records
+1.0.7 build checks; the actual picker matrix was not marked complete.
 
-The earlier development installation used:
-
-```text
-C:\Users\user\.codex\CodexModelWheel.ahk
-C:\Users\user\.codex\lib\UIA-v2
-%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\CodexModelWheelLauncher.ahk
-```
-
-The public installer migrates away from the legacy startup launcher. Do not
-delete unrelated AutoHotkey scripts such as the user's `arrowkeys.ahk`.
-
-## Verified UI facts
-
-Legacy Advanced-picker path validated on 2026-08-28 against:
-
-```text
-OpenAI.Codex_26.825.4187.0_x64__2p2nqsd0c76g0
-```
-
-Accessible picker button examples:
-
-```text
-5.6 Luna High
-5.6 Sol Light
-5.6 Sol Extra High
-5.6 Sol Max
-```
-
-Compact mode exposes:
-
-```text
-Show advanced options
-```
-
-Advanced mode exposes MenuItem controls:
-
-```text
-Show compact options
-Model 5.6 Sol
-Effort Extra High
-Speed Standard
-```
-
-Model submenu options include `5.6 Sol`, `5.6 Terra`, and `5.6 Luna`. Effort
-submenu options include `Light`, `Medium`, `High`, `Extra High`, `Max`, and
-sometimes `Ultra` with additional descriptive text.
-
-The 2026-08-29 Chat composer in desktop package
-`OpenAI.Codex_26.825.5331.0_x64__2p2nqsd0c76g0` differs from Codex:
-
-```text
-Button: Select ChatGPT model
-Advanced row: Model 5.6 Sol
-Advanced row: Effort Instant
-Compact visible value examples: Instant, Extra High
-```
-
-Chat exposes `Instant`, `Medium`, `High`, `Extra High`, and `Pro`, but the four
-default hotkeys intentionally use an independent sequence: F16 → Instant,
-F17 → Medium, F18 → High, and F19 → Pro. Their Codex selections remain Luna
-High, Sol Light, Sol Extra High, and Sol Max. Both Chat screenshots confirmed
-the expanded Advanced rows and the compact Power-slider state.
-
-The 2026-09-02 desktop update
-`OpenAI.Codex_26.901.1978.0_x64__2p2nqsd0c76g0` unified the Codex and ChatGPT
-picker accessibility surface:
-
-```text
-Button: 5.6 Sol Max
-Menu: Select effort
-MenuItem: Select model
-MenuItem: Power (AcceleratorKey: ArrowLeft ArrowRight)
-RadioButton: 5.6 Sol / 5.6 Terra / 5.6 Luna
-```
-
-The popup is attached to the desktop UIA root rather than the Codex window,
-but opening it moves focus into the popup. Follow that focused element's
-ancestors to the `Menu`; do not scan the full desktop accessibility tree.
-`Select model` opens the radio view with focus + Enter. Selecting a model
-returns to compact view, where Power is set with Left/Right arrows. The mode
-switch Button (`Switch mode, current mode: Codex|ChatGPT`) now determines the
-active composer because both modes use the same combined picker Button name.
-
-Chat's existing `ChatEffort` configuration values remain Instant, Medium,
-High, and Pro for backward compatibility. In the unified picker they map to
-Light, Medium, High, and Max respectively.
-
-## Root causes already solved
-
-1. Codex desktop did not honor an attempted `.codex/keybindings.json` solution.
-2. The picker shortcut can be customized, so the runtime opens the accessible
-   picker button directly instead of sending Ctrl+Shift+M.
-3. UIA-v2 treats an array condition as a path, not an OR expression; the runtime
-   has an explicit polling helper for multiple possible initial states.
-4. Accessible names use `5.6 Sol`, not necessarily `GPT-5.6 Sol`.
-5. A broad regex selected inner text instead of the clickable MenuItem. Selectors
-   are constrained by control type.
-6. Model and Effort are `FlyoutSubmenuItem` React controls. UIA `Click()` can
-   report success without opening them. Use focus + Right Arrow.
-7. The compact/advanced view toggle can also ignore a reported UIA click. Use
-   focus + Enter.
-8. React retains stale text nodes during transitions. Final verification must
-   match the real Button control and wait for the exact target label.
-9. Wait for the Model parent row to update before opening Effort; then wait for
-   the Effort row to update before final verification.
-10. Legacy Chat builds use the stable Button name `Select ChatGPT model`; keep
-    that selector and bounded final-effort verification as a fallback.
-11. Current Chat and Codex use identical combined picker labels. Detect Chat
-    from `Switch mode, current mode: ChatGPT`, not from the picker Button.
-12. In 26.901 the generic UIA-v2 `Click()` races the Button's new
-    `ExpandCollapse` implementation. Call `Expand()` directly and confirm its
-    state before reading the focused popup.
-13. The 26.901 popup disappears from the main window UIA tree and removes the
-    trigger while open. Follow focus to its ancestor Menu so both compact and
-    already-open model views remain valid starting states.
-
-## Last verified runtime evidence
-
-The development script completed these end-to-end transitions with final
-`selected=` log records:
-
-```text
-F18 -> 5.6 Sol Extra High
-F19 -> 5.6 Sol Max
-F16 -> 5.6 Luna High
-F17 -> 5.6 Sol Light
-```
-
-It also completed compact/simple mode to Advanced to `5.6 Sol Max`, including:
-
-```text
-option-select=Show advanced options
-submenu-open=Model 5.6 Sol
-option-select=Max
-selected=5.6 Sol Max
-```
-
-On 2026-09-02, the updated development script completed the current unified
-picker matrix in a real idle task:
-
-```text
-Codex: F16 Luna High, F17 Sol Light, F18 Sol Extra High, F19 Sol Max
-Chat:  F16 Sol Light, F17 Sol Medium, F18 Sol High, F19 Sol Max
-Already-open compact view -> Sol Max
-Already-open model radio view -> Luna High
-```
-
-## Third-party dependency
-
-UIA-v2 by Descolada is vendored at commit:
-
-```text
-2846a9b10518a95cf26a6c43671a9512b231ccb7
-```
-
-Upstream: https://github.com/Descolada/UIA-v2
-
-License: MIT. Preserve `vendor/UIA-v2/LICENSE` and
-`THIRD_PARTY_NOTICES.md` when updating it.
-
-## Compatibility warning
-
-Codex UI Automation labels are not a documented public API. When a desktop app
-update breaks a selector, inspect the live UIA tree and the installed webview
-source before changing behavior. Preserve support for both initial picker modes
-and validate real state changes rather than compensating with delays alone.
-
-## Store release boundary
-
-The Partner Center product name **ReasonKey** is reserved under **Rotorlash
-Labs**. Its exact Package/Identity Name, Publisher ID, and publisher display
-name are stored only in the gitignored `packaging/msix/StoreIdentity.json`.
-The repository contains the MSIX manifest template, generated-asset pipeline,
-local signing/test scripts, privacy policy, English listing copy, certification
-notes, and submission checklist. The unsigned Store-identity package has been
-built. The elevated packaged-runtime test passed with exit code `0`. WACK
-10.0.26100.8249 completed with overall `WARNING`, not `FAIL`: its optional
-blocked-executable test detected generic AutoHotkey runtime strings/APIs, and
-its DPI analyzer could not process the Ahk2Exe binary. The checked-in
-certification notes explain both findings, while a runtime probe of the exact
-manifest-updated packaged executable confirmed
-`PROCESS_PER_MONITOR_DPI_AWARE` (`2`). The real Codex/ChatGPT regression
-matrix, Partner Center listing entry, package upload, certification, and public
-post-certification validation remain separate gates.
+The last recorded 1.0.6 submission state is historical; fresh publication,
+clean-profile installation and actual update/restart are separate
+[submission gates](../packaging/store/SubmissionChecklist.md). Do not infer current
+Store status from a built package, checked historical box or README link.

@@ -41,9 +41,9 @@ desktop app is absent. For a complete functional test:
 5. Confirm the combined model/effort label changes to the corresponding value.
 
 The same shortcuts must also be tested in a ChatGPT Chat composer. They select
-5.6 Sol with Light, Medium, High, and Max Power in the current unified picker.
-Legacy Instant and Pro configuration values map to the current Light and Max
-endpoints as documented in the public README.
+5.6 Sol with Instant, Medium, High, and Pro in ordinary Chat. Older combined-label
+pickers use Light and Max endpoints as documented in the public README.
+New Codex defaults select GPT-6 Astra Light, Medium, High, and Extra High.
 
 No publisher-supplied Codex or OpenAI credentials are required or included.
 

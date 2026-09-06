@@ -28,8 +28,9 @@ local test, identity, and submission process.
 ![ReasonKey Quick Start window](packaging/store/assets/StoreScreenshot-ReasonKey-QuickStart.png)
 
 If you downloaded the source ZIP or cloned the repository, double-click
-[`Install.cmd`](Install.cmd). It verifies the published checksum before running
-the latest installer.
+[`Install.cmd`](Install.cmd). It uses a locally built installer from `dist` when
+present; otherwise it downloads the latest installer and verifies its published
+checksum before running it.
 
 ## Build the executables yourself
 
@@ -122,25 +123,24 @@ checked together:
 
 | Shortcut | Model | Reasoning effort |
 |---|---|---|
-| `F16` | GPT-5.6 Luna | High |
-| `F17` | GPT-5.6 Sol | Light |
-| `F18` | GPT-5.6 Sol | Extra High (`xhigh`) |
-| `F19` | GPT-5.6 Sol | Max |
+| `F16` | GPT-6 Astra | Light |
+| `F17` | GPT-6 Astra | Medium |
+| `F18` | GPT-6 Astra | High |
+| `F19` | GPT-6 Astra | Extra High |
 
 When the composer is in **ChatGPT Chat** instead of **Codex**, the same hotkeys
 select 5.6 Sol on Chat's independent Power scale:
 
 | Shortcut | Chat model | Power |
 |---|---|---|
-| `F16` | 5.6 Sol | Light |
+| `F16` | 5.6 Sol | Instant |
 | `F17` | 5.6 Sol | Medium |
 | `F18` | 5.6 Sol | High |
-| `F19` | 5.6 Sol | Max |
+| `F19` | 5.6 Sol | Pro |
 
-The Codex Model/Effort values in the table above remain unchanged. Existing
-configuration still uses the legacy `ChatEffort=Instant` and
-`ChatEffort=Pro` names; ReasonKey maps them to the current `Light` and `Max`
-Power endpoints. An unavailable option fails explicitly instead of silently
+Chat uses its independent `ChatEffort` values. Some unified-picker versions
+display the `Instant` and `Pro` endpoints as `Light` and `Max`; ReasonKey
+retains that compatibility. An unavailable option fails explicitly instead of silently
 choosing a different level.
 
 The shortcuts are active only while the Codex/ChatGPT desktop window is active. They do not
@@ -161,11 +161,16 @@ The installed `presets.ini` contains a beginner-oriented explanation of every
 setting and the supported hotkey syntax. **Open configuration guide** opens an
 always-current commented example. Upgrades preserve the active `presets.ini`.
 
-Supported model names are `Luna`, `Terra`, and `Sol`. Supported effort names
+Supported model names are `Luna`, `Terra`, `Sol`, and `Astra` (GPT-6).
+To select GPT-6 Astra, set `Model=Astra` in the desired preset, save, and
+choose **Reload** from the tray menu. For example, `Model=Astra` with
+`Effort=Max` selects `6 Astra Max` in Codex. Existing presets and ChatGPT's
+independent Sol/ChatEffort mapping are preserved during upgrades.
+Supported effort names
 are `Light`, `Medium`, `High`, `Extra High`, `Max`, and `Ultra`, subject to what
 the selected model and your OpenAI account expose. Each preset can also set an
 independent `ChatEffort` of `Instant`, `Medium`, `High`, or `Pro`. Those names
-remain the configuration compatibility contract: current ChatGPT displays
+remain the configuration compatibility contract; some picker versions display
 them as `Light`, `Medium`, `High`, and `Max`. Existing configuration files
 without `ChatEffort` automatically receive the four legacy values for presets
 1 through 4.
@@ -201,7 +206,7 @@ details.
 - English UI labels in the current release
 
 The current unified Codex and ChatGPT paths were validated against desktop
-package `OpenAI.Codex_26.901.1978.0_x64__2p2nqsd0c76g0`. The legacy Advanced
+package `OpenAI.Codex_26.901.5280.0_x64__2p2nqsd0c76g0`. The legacy Advanced
 path remains for compatibility with the earlier 26.825 builds. UI Automation
 labels are not a public compatibility contract, so future desktop updates can
 require selector updates.
@@ -248,6 +253,11 @@ files. The direct installer keeps its existing per-user uninstall behavior.
 The source is AutoHotkey v2 and uses the MIT-licensed UIA-v2 library. See
 [Development](docs/DEVELOPMENT.md) for layout, build, validation, and release
 instructions.
+
+For project work, start with the [product specification](docs/product-spec.md),
+which routes to the exact owners of presets, picker interaction, installation
+and Store updates. [Project context](docs/PROJECT_CONTEXT.md) maps those contracts
+to source and validation entry points. Historical reports are kept separately.
 
 ## License
 

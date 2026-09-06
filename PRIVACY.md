@@ -28,7 +28,12 @@ account:
 - `presets.ini`, containing the user's shortcut configuration;
 - `presets-reference.ini`, containing the configuration guide;
 - `ReasonKey.log`, containing local diagnostic events such as requested
-  and selected model preset labels and Store update outcomes.
+  and selected model preset labels and Store update outcomes;
+- a local Quick Start completion marker so onboarding is not repeated.
+
+The Store runtime can also keep a copy of its native update helper in its
+writable package directory to support post-update activation. This is an
+executable component, not collected user data.
 
 The Microsoft Store package stores these files in its per-user package
 `LocalState` directory. The direct installer stores them under

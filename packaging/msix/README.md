@@ -1,5 +1,10 @@
 # MSIX packaging
 
+Canonical owner of MSIX construction, signing and local package-test procedure.
+Runtime storage/startup/singleton rules belong to
+[installation](../../docs/product-spec/installation.md); update activation and
+identity gating belong to [Store updates](../../docs/product-spec/store-updates.md).
+
 The MSIX channel is separate from the existing per-user EXE installer. It uses
 the same compiled runtime but lets Microsoft Store own installation, signing,
 updates, startup registration, and clean uninstall.
@@ -108,26 +113,15 @@ assets are intentionally ignored by Git.
 
 ## Store-specific behavior
 
-- Editable data is stored under the package's `LocalState` directory instead
-  of the read-only WindowsApps installation directory.
-- On first launch, an existing direct-install `presets.ini` is copied into the
-  package data directory without changing the original. The migration accepts
-  both the current `ReasonKey` path and the legacy `CodexModelHotkeys` path.
-- The startup task is registered through the supported MSIX manifest extension
-  and is disabled by default. The quick-start window links to Windows Startup
-  Apps so the user can opt in.
-- The Store and direct-installer runtimes acquire the same per-session named
-  mutex. If both channels are installed, only the first current runtime remains
-  active; a second channel launch exits before it creates hotkeys or a tray
-  icon.
-- On each active launch of the exact public Store identity, the native helper
-  checks `Windows.Services.Store` for a ReasonKey update. It silently requests
-  installation only when Windows permits it, and Restart Manager returns the
-  runtime after package replacement. Development and direct builds do not
-  query the public Store identity.
-- The Store owns signing, package delivery, update policy, and uninstall. The
-  MSIX does not install the project's PowerShell uninstaller or write its own
-  Installed Apps registry entry.
+Package changes must satisfy the [lifecycle owner](../../docs/product-spec/installation.md):
+writable data outside WindowsApps, preserved migration inputs, optional startup
+and one runtime across channels. The MSIX does not install the PowerShell
+uninstaller or write its own Installed Apps registry entry.
+
+The native helper is included in MSIX. A development runtime can start it, but
+its native identity gate exits before a Store request. The
+[update owner](../../docs/product-spec/store-updates.md) defines the exact boundary
+and distinguishes package probes from real update/restart evidence.
 
 ## Required external values
 
