@@ -33,7 +33,7 @@ Read through the [product core](../product-spec.md).
 
 ## Current implementation
 
-Source inspection: 2026-09-05, working-tree [ReasonKey.ahk](../../src/ReasonKey.ahk) 1.0.9.
+Source inspection: 2026-09-08, working-tree [ReasonKey.ahk](../../src/ReasonKey.ahk) 1.0.10.
 
 | Area | Source entry points / current accessible surface |
 |---|---|
@@ -51,6 +51,13 @@ FocusPickerElement confirms the focused accessible name before keyboard input.
 Already-open Codex compact popups are closed with Escape and reopened only
 after finding the actual Button. Recovery is bounded and every attempt retains
 final model/effort verification.
+
+The 26.903 unified picker can keep its Button in the tree with the placeholder
+Select effort or Select model. FindCodexPickerTrigger accepts those names only
+beside an actual Work/Codex editor; final verification still requires the exact
+combined model/effort Button. GetPickerSearchRoot returns failure when neither
+the focused popup nor a supplied target-window fallback is available, without
+falling back to a desktop-wide scan.
 
 Selectors recognize 5.6 Luna/Terra/Sol and GPT-6 Astra (also 6 Astra) through GetModelLabel,
 GetModelOptionPattern and GetPickerTriggerPattern, including reopening the

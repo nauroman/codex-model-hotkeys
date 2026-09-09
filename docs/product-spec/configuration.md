@@ -10,6 +10,11 @@ A keyboard preset selects a complete Codex model/effort combination and an
 independent Chat effort. Chat uses 5.6 Sol. The legacy INI names remain compatible
 with both picker generations:
 
+ChatGPT Work follows the Codex Model/Effort contract. Ordinary Chat has a separate
+catalog; never describe its Sol presets as Astra or silently substitute it for
+an explicitly requested Astra selection. The tested 26.903 ordinary Chat catalog
+does not expose Astra.
+
 | Hotkey | Codex model | Codex effort | ChatEffort / current Chat | Older combined Chat Power |
 |---|---|---|---|---|
 | F16 | Astra | Light | Instant | Light |
@@ -43,7 +48,7 @@ its independent scale. Its stable `Select ChatGPT model` Button is verified
 through descendants or persisted Power status; the selected model radio is
 also verified. Older combined-label Chat pickers retain the Light/Max mapping.
 
-Source inspection: 2026-09-05, working-tree runtime AppVersion 1.0.9; see the Astra diagnostic report for live
+Source inspection: 2026-09-08, working-tree runtime AppVersion 1.0.10; see the Astra diagnostic report for earlier live
 UI and upgrade proof.
 
 In [ReasonKey.ahk](../../src/ReasonKey.ahk), LoadPresets reads General/PresetCount

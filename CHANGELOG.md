@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.10 - 2026-09-09
+
+- Recognize the 26.903 open-picker Select effort / Select model Button beside
+  a Codex or ChatGPT Work editor, retaining exact final model/effort verification.
+- Bound popup discovery to keyboard focus and the target window; remove the
+  full-desktop fallback when popup focus is lost.
+- Clarify Astra Light/Medium/High/Extra High presets for Codex and ChatGPT Work,
+  ordinary Chat's separate Sol catalog, and preserved Store versus EXE settings.
+- Show the active installation channel in Quick Start's configuration guidance.
+
 ## 1.0.9 - 2026-09-05
 
 - Set the final Codex F19 default to Astra Extra High per the updated user

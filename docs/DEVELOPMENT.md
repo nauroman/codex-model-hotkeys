@@ -140,6 +140,8 @@ user INI and restore any deliberately changed composer mode/preset afterward.
    - repeat Astra selection from compact and model radio views, then switch
      back to Luna or Sol, confirming the actual Button after each transition.
 3. Current unified picker in ChatGPT:
+   - distinguish ordinary Chat from ChatGPT Work; Work uses the Codex Astra
+     fixtures above, while ordinary Chat must expose the separate Sol catalog;
    - F16 → `5.6 Sol Instant` (or Light on older combined-label pickers);
    - F17 → `5.6 Sol Medium`;
    - F18 → `5.6 Sol High`;
@@ -183,7 +185,9 @@ throw. Verify the corresponding accessible state change.
 
 ## Release
 
-Recorded [Astra development evidence](diagnostics/astra-validation-20260905.md) is separate from these reusable release gates.
+Recorded [1.0.10 release evidence](diagnostics/release-1.0.10.md) and earlier
+[Astra development evidence](diagnostics/astra-validation-20260905.md) are
+separate from these reusable release gates.
 
 ### Release steps
 

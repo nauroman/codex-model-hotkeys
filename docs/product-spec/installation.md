@@ -26,6 +26,8 @@ behavior belongs to [Store updates](store-updates.md).
   black-key icon with green-and-white chevrons and tray access to configuration,
   reference guide, logs, Reload and Exit.
 - Quick Start displays the loaded Codex presets, including user customizations.
+- Quick Start identifies Codex/ChatGPT Work presets and the active Store/direct
+  channel so users can locate preserved settings after an upgrade.
 - Setup waits for recognized previous runtimes to exit, then replaces the EXE.
   Completion requires the new version and PID's startup log after hotkey
   registration; a spawned process alone is insufficient.
@@ -34,7 +36,7 @@ behavior belongs to [Store updates](store-updates.md).
 
 ## Current implementation
 
-Source inspection: 2026-09-05, working-tree runtime and installer AppVersion 1.0.9.
+Source inspection: 2026-09-08, working-tree runtime and installer AppVersion 1.0.10.
 
 | Surface | Current location / implementation |
 |---|---|

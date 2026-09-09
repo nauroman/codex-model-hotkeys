@@ -121,6 +121,8 @@ checked together:
 
 ## Default shortcuts
 
+In **Codex** and **ChatGPT Work**, new installations use:
+
 | Shortcut | Model | Reasoning effort |
 |---|---|---|
 | `F16` | GPT-6 Astra | Light |
@@ -143,6 +145,10 @@ display the `Instant` and `Pro` endpoints as `Light` and `Max`; ReasonKey
 retains that compatibility. An unavailable option fails explicitly instead of silently
 choosing a different level.
 
+Ordinary Chat has a separate model catalog. In the tested 26.903 app it exposes
+Latest, GPT-5.6 Sol and GPT-5.5, without Astra. Use **Codex** or **ChatGPT Work**
+for the Astra presets above; ReasonKey cannot unlock a model absent from the picker.
+
 The shortcuts are active only while the Codex/ChatGPT desktop window is active. They do not
 capture these keys globally in other applications.
 
@@ -160,6 +166,13 @@ show hidden icons. Hover over it to confirm that its tooltip starts with
 The installed `presets.ini` contains a beginner-oriented explanation of every
 setting and the supported hotkey syntax. **Open configuration guide** opens an
 always-current commented example. Upgrades preserve the active `presets.ini`.
+
+**Still selecting Luna or Sol after upgrading?** Open `presets.ini` through the
+running ReasonKey tray icon. Store and direct EXE installations have separate
+configuration files, and upgrading deliberately keeps existing presets. Set
+`Model=Astra` in Preset1–Preset4 and their `Effort` values to `Light`, `Medium`,
+`High`, `Extra High`, respectively, then save and choose **Reload**. The tray
+command opens the file used by the active runtime.
 
 Supported model names are `Luna`, `Terra`, `Sol`, and `Astra` (GPT-6).
 To select GPT-6 Astra, set `Model=Astra` in the desired preset, save, and
@@ -206,7 +219,7 @@ details.
 - English UI labels in the current release
 
 The current unified Codex and ChatGPT paths were validated against desktop
-package `OpenAI.Codex_26.901.5280.0_x64__2p2nqsd0c76g0`. The legacy Advanced
+package `OpenAI.Codex_26.903.8094.0_x64__2p2nqsd0c76g0`. The legacy Advanced
 path remains for compatibility with the earlier 26.825 builds. UI Automation
 labels are not a public compatibility contract, so future desktop updates can
 require selector updates.
@@ -231,6 +244,9 @@ does not override the user's setting and tries again on the next launch. The
 direct EXE does not run this Store-only update helper.
 
 See [Troubleshooting](docs/TROUBLESHOOTING.md) before opening an issue.
+
+The [1.0.10 validation report](docs/diagnostics/release-1.0.10.md) records the
+tested desktop version, actual picker results and remaining external checks.
 
 ## One runtime across Store and direct installs
 

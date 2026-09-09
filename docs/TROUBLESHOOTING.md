@@ -38,6 +38,18 @@ appeared before timeout. Unified pickers use Select model and Power instead.
 Both paths and already-open views are supported; include the starting view in
 your report. See the [picker contract](product-spec/picker.md).
 
+## An upgrade still selects Luna or Sol
+
+Upgrades preserve existing presets, including those originally migrated into
+the Store package. Store and direct installations keep separate active files.
+Open **presets.ini** from the running tray icon, set Preset1–Preset4 to
+`Model=Astra` with `Effort=Light`, `Medium`, `High`, `Extra High`, then save and
+choose **Reload**. Quick Start shows the loaded Codex/Work presets and channel.
+
+Ordinary Chat uses a separate model catalog and independent `ChatEffort` values.
+The tested 26.903 ordinary Chat catalog does not expose Astra; select Codex or
+ChatGPT Work when you want Astra. A missing model cannot be added by ReasonKey.
+
 ## A model or effort option is missing
 
 Availability can vary by composer, model, account, workspace policy, and app version.

@@ -156,7 +156,7 @@ UIA.SetMaximumDPIAwareness()
 Persistent true
 
 global AppName := "ReasonKey"
-global AppVersion := "1.0.9"
+global AppVersion := "1.0.10"
 global PackageFamilyName := GetPackageFamilyName()
 global DataDirectory := GetApplicationDataDirectory(PackageFamilyName)
 global ConfigPath := A_IsCompiled
@@ -824,7 +824,7 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
     )
 
     guideGui.SetFont(sectionFont, "Segoe UI")
-    guideGui.AddText(sectionOptions, "Configured Codex shortcuts")
+    guideGui.AddText(sectionOptions, "Configured Codex / ChatGPT Work shortcuts")
     guideGui.SetFont(bodyFont, "Segoe UI")
     guideGui.AddText(
         bodyOptions,
@@ -838,7 +838,8 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
         bodyOptions,
         "Chat has its own ChatEffort settings: Instant, Medium, High, and Pro "
         . "by default, using 5.6 Sol. Some picker versions display the endpoints "
-        . "as Light and Max. Codex and Chat keep independent selections."
+        . "as Light and Max. Astra is available in Codex and ChatGPT Work; "
+        . "ordinary Chat must expose a model before ReasonKey can select it."
     )
 
     guideGui.SetFont(sectionFont, "Segoe UI")
@@ -858,7 +859,9 @@ ShowQuickStart(isFirstRun := false, previewStoreFeatures := false)
         bodyOptions,
         "Right-click the black key icon near the Windows clock to edit "
         . "presets.ini, open the log, reload settings, or exit. If the icon "
-        . "is hidden, click the ^ arrow in the notification area."
+        . "is hidden, click the ^ arrow in the notification area. "
+        . "Upgrades keep your presets. Edit them through this tray icon to "
+        . "change the active " (isStoreRuntime ? "Store" : "direct EXE") " installation."
     )
 
     guideGui.SetFont(sectionFont, "Segoe UI")
@@ -1816,11 +1819,20 @@ MatchesAnyPattern(value, patterns)
 
 FindCodexPickerTrigger(windowElement)
 {
-    return FindVisibleElement(
+    trigger := FindVisibleElement(
         windowElement,
         GetPickerTriggerPattern(),
         "Button"
     )
+    if trigger
+        return trigger
+
+    ; 26.903 uses a placeholder Button while the unified picker is open.
+    ; Only use it to open/continue the picker, never as selection evidence.
+    ; Scope the generic label to an actual Work/Codex composer.
+    if FindVisibleElement(windowElement, "^(?:Do anything|Work with ChatGPT)$", "Edit")
+        return FindVisibleElement(windowElement, "^Select (?:model|effort)$", "Button")
+    return false
 }
 
 IsChatComposer(windowElement)
@@ -1934,9 +1946,9 @@ GetPickerSearchRoot(fallbackRoot := false)
     if fallbackRoot
         return fallbackRoot
 
-    try return UIA.GetRootElement()
-    catch
-        return false
+    ; Losing popup focus is a bounded failure, not permission to scan every
+    ; application on the desktop. Callers may still use their target window.
+    return false
 }
 
 WaitModernChatTriggerValue(windowElement, targetValue, timeout)

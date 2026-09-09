@@ -43,7 +43,10 @@ desktop app is absent. For a complete functional test:
 The same shortcuts must also be tested in a ChatGPT Chat composer. They select
 5.6 Sol with Instant, Medium, High, and Pro in ordinary Chat. Older combined-label
 pickers use Light and Max endpoints as documented in the public README.
-New Codex defaults select GPT-6 Astra Light, Medium, High, and Extra High.
+Codex and ChatGPT Work defaults select GPT-6 Astra Light, Medium, High, and
+Extra High. Ordinary Chat's separate catalog does not expose Astra on the
+tested 26.903.8094.0 app. Upgrades preserve the active configuration, so an
+existing install may still show customized or older presets in Quick Start.
 
 No publisher-supplied Codex or OpenAI credentials are required or included.
 
